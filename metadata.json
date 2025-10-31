@@ -1,0 +1,5 @@
+{
+  "name": "Optimizador de Medios con IA",
+  "description": "Una aplicación para analizar y mejorar archivos de imagen, video y audio utilizando IA. Obtén descripciones detalladas, colorea imágenes en blanco y negro, reduce el ruido y mejora la resolución.",
+  "requestFramePermissions": []
+}
