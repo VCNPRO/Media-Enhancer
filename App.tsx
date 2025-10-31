@@ -115,8 +115,8 @@ const App: React.FC = () => {
 
     const tabs = [
         { id: 'creative', label: 'Herramientas Creativas' },
-        { id: 'analysis', label: 'Análisis de Medios', disabled: !mediaFile },
-        { id: 'enhancement', label: 'Mejora de Medios', disabled: !mediaFile },
+        { id: 'analysis', label: 'Análisis de Medios' },
+        { id: 'enhancement', label: 'Mejora de Medios' },
     ];
     
     const renderMediaPreview = () => {
@@ -158,6 +158,7 @@ const App: React.FC = () => {
                 <HistorySidebar history={history} onSelect={handleHistorySelect} onClear={handleClearHistory} />
                 <div className="flex-1 p-8 overflow-y-auto" style={{maxHeight: 'calc(100vh - 4rem)'}}>
                     <div className="max-w-4xl mx-auto">
+                        {/* Mostrar FileUpload cuando no hay archivo y no estamos en creative */}
                         {!mediaFile && activeTab !== 'creative' && (
                             <div className="text-center space-y-8">
                                 <h2 className="text-3xl font-bold">Sube un archivo para empezar</h2>
@@ -165,9 +166,20 @@ const App: React.FC = () => {
                                 <FileUpload onFileChange={handleFileChange} />
                             </div>
                         )}
-                        
+
+                        {/* Mostrar contenido cuando hay archivo o estamos en creative */}
                         {(mediaFile || activeTab === 'creative') && (
                             <div className="space-y-6">
+                                {/* Banner informativo cuando no hay archivo en pestañas que lo requieren */}
+                                {!mediaFile && activeTab !== 'creative' && (
+                                    <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4 mb-4">
+                                        <p className="text-yellow-200 text-center">
+                                            📁 Por favor, sube un archivo para usar esta función
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Preview del archivo subido */}
                                 {mediaFile && (
                                     <div className="bg-gray-800/50 p-4 rounded-lg">
                                         <div className="flex justify-between items-center mb-4">
@@ -177,12 +189,21 @@ const App: React.FC = () => {
                                         {renderMediaPreview()}
                                     </div>
                                 )}
+
                                 <div className="bg-gray-800/50 rounded-lg">
                                     <div className="px-4">
                                       <Tabs tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} />
                                     </div>
                                     {renderPanel()}
                                 </div>
+
+                                {/* FileUpload visible en la parte inferior cuando no hay archivo */}
+                                {!mediaFile && (
+                                    <div className="mt-8">
+                                        <h3 className="text-xl font-semibold mb-4 text-center">Sube un archivo para empezar</h3>
+                                        <FileUpload onFileChange={handleFileChange} />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
