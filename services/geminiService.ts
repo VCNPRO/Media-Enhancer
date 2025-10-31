@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { AnalysisResult, StoryboardFrame, ImageEnhancementOptions } from "../types";
 
-// FIX: Initialize the GoogleGenAI client, assuming API_KEY is in environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// FIX: Initialize the GoogleGenAI client, assuming GEMINI_API_KEY is in environment variables.
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Helper to convert File to a Gemini Part object
 const fileToGenerativePart = async (file: File) => {
