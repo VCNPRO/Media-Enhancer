@@ -141,9 +141,32 @@ const App: React.FC = () => {
     const renderPanel = () => {
         switch (activeTab) {
             case 'analysis':
-                return mediaFile && <AnalysisPanel key={mediaFile.url} mediaFile={mediaFile} onAnalysisComplete={handleAnalysisComplete} onStoryboardComplete={handleStoryboardComplete} />;
+                if (!mediaFile) {
+                    return (
+                        <div className="p-8 text-center">
+                            <h3 className="text-xl font-semibold text-gray-300 mb-2">Análisis de Medios</h3>
+                            <p className="text-gray-400">Sube una imagen, video o audio para analizar su contenido con IA.</p>
+                        </div>
+                    );
+                }
+                return <AnalysisPanel key={mediaFile.url} mediaFile={mediaFile} onAnalysisComplete={handleAnalysisComplete} onStoryboardComplete={handleStoryboardComplete} />;
             case 'enhancement':
-                return mediaFile && <EnhancementPanel key={mediaFile.url} mediaFile={mediaFile} onEnhancementComplete={handleEnhancementComplete} />;
+                if (!mediaFile) {
+                    return (
+                        <div className="p-8 text-center">
+                            <h3 className="text-xl font-semibold text-gray-300 mb-2">Mejora de Medios</h3>
+                            <p className="text-gray-400 mb-4">Sube una imagen o audio para mejorar su calidad con IA.</p>
+                            <div className="bg-gray-800/50 p-4 rounded-lg max-w-md mx-auto">
+                                <p className="text-sm text-gray-400">
+                                    <span className="font-semibold text-white">Imágenes:</span> Mejora calidad, colorea blanco y negro<br/>
+                                    <span className="font-semibold text-white">Audio:</span> Elimina ruido de fondo, mejora claridad<br/>
+                                    <span className="font-semibold text-white">Video:</span> No soportado actualmente
+                                </p>
+                            </div>
+                        </div>
+                    );
+                }
+                return <EnhancementPanel key={mediaFile.url} mediaFile={mediaFile} onEnhancementComplete={handleEnhancementComplete} />;
             case 'creative':
                 return <CreativeToolsPanel onGenerationComplete={handleGenerationComplete} />;
             default:
