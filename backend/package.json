@@ -10,7 +10,14 @@
     "test": "jest",
     "lint": "eslint . --ext .ts"
   },
-  "keywords": ["media", "video", "audio", "editing", "ai", "gemini"],
+  "keywords": [
+    "media",
+    "video",
+    "audio",
+    "editing",
+    "ai",
+    "gemini"
+  ],
   "author": "VCNPRO",
   "license": "MIT",
   "dependencies": {
@@ -33,6 +40,7 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.13.1",
     "stripe": "^17.3.1",
+    "svix": "^1.81.0",
     "winston": "^3.17.0"
   },
   "devDependencies": {

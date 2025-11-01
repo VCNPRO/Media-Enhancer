@@ -16,6 +16,7 @@ import userRoutes from './routes/user.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 import mediaRoutes from './routes/media.routes';
 import webhookRoutes from './routes/webhook.routes';
+import clerkWebhookRoutes from './routes/clerk-webhook.routes';
 
 // Import middleware
 import { errorHandler } from './middleware/error.middleware';
@@ -66,6 +67,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/webhooks', clerkWebhookRoutes);
 
 // 404 handler
 app.use(notFound);
