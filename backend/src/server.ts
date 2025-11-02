@@ -22,6 +22,9 @@ import clerkWebhookRoutes from './routes/clerk-webhook.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { notFound } from './middleware/notFound.middleware';
 
+// Import database
+import pool from './config/database';
+
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
@@ -76,10 +79,18 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+
+  // Test database connection
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log('✅ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+  }
 });
 
 export default app;
