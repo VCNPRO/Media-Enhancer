@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { api } from '../services/api';
+import { useUser } from '@clerk/clerk-react';
 import { Settings, X } from 'lucide-react';
 
 export function TierSelector() {
   const { tier, refreshSubscription } = useSubscription();
+  const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const changeTier = async (newTier: 'starter' | 'creator' | 'professional') => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      await api.post('/subscriptions/set-tier', { tier: newTier });
+
+      // Guardar en localStorage (desarrollo)
+      localStorage.setItem(`tier_${user.id}`, newTier);
+
+      // Refrescar el contexto
       await refreshSubscription();
+
       setIsOpen(false);
     } catch (error) {
       console.error('Error changing tier:', error);
@@ -52,7 +60,7 @@ export function TierSelector() {
             </p>
 
             <p className="text-yellow-400 text-sm mb-6 bg-yellow-900/20 p-3 rounded">
-              ⚠️ Modo de desarrollo: Cambia de tier para probar los diferentes dashboards
+              🔧 Modo de desarrollo: Cambia de tier para probar los diferentes dashboards (se guarda en tu navegador)
             </p>
 
             <div className="space-y-3">

@@ -29,13 +29,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     try {
       setLoading(true);
-      const response = await api.get('/subscriptions');
 
-      if (response.data.success && response.data.data) {
-        setTier(response.data.data.tier || 'starter');
-        setSubscription(response.data.data);
-      } else {
-        // Usuario sin suscripción = tier starter por defecto
+      // Primero intentar obtener del localStorage (desarrollo)
+      const localTier = localStorage.getItem(`tier_${user.id}`) as UserTier | null;
+      if (localTier && ['starter', 'creator', 'professional'].includes(localTier)) {
+        setTier(localTier);
+        setSubscription({ tier: localTier, status: 'active' });
+        setLoading(false);
+        return;
+      }
+
+      // Si no hay localStorage, intentar backend
+      try {
+        const response = await api.get('/subscriptions');
+        if (response.data.success && response.data.data) {
+          setTier(response.data.data.tier || 'starter');
+          setSubscription(response.data.data);
+        } else {
+          setTier('starter');
+          setSubscription(null);
+        }
+      } catch (backendError) {
+        // Si el backend no está disponible, usar tier starter por defecto
+        console.warn('Backend no disponible, usando tier starter por defecto');
         setTier('starter');
         setSubscription(null);
       }
