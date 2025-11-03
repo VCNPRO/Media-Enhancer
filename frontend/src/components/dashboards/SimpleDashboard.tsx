@@ -219,7 +219,7 @@ export function SimpleDashboard() {
         }
       };
 
-      video.onerror = (error) => {
+      video.onerror = () => {
         clearTimeout(timeout);
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Error cargando video'));
