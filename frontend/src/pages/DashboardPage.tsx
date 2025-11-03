@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTierAccess } from '../hooks/useTierAccess';
 import { SimpleDashboard } from '../components/dashboards/SimpleDashboard';
 import { ProDashboard } from '../components/dashboards/ProDashboard';

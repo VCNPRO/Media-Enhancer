@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  Layout, Video, Wand2, Database, Settings, FolderOpen,
-  TrendingUp, Clock, Activity, Zap, Download, Plus,
+  Layout, Wand2, Database, Settings, FolderOpen,
+  TrendingUp, Clock, Activity, Zap, Plus,
   Grid, List, Search, Filter, MoreVertical, Play,
-  Pause, Upload, ChevronRight, BarChart3, Users
+  Upload, BarChart3, Users
 } from 'lucide-react';
 import { useTierAccess } from '../../hooks/useTierAccess';
 
@@ -20,8 +20,8 @@ interface Project {
 }
 
 export function ProDashboard() {
-  const { tier, getTierLimits } = useTierAccess();
-  const limits = getTierLimits();
+  const { getTierLimits } = useTierAccess();
+  getTierLimits();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('projects');
 

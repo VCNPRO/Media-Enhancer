@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Upload, Video, Download, Sparkles, Clock, FileVideo } from 'lucide-react';
 import { useTierAccess } from '../../hooks/useTierAccess';
 
 export function SimpleDashboard() {
   const { tier, getTierLimits } = useTierAccess();
   const limits = getTierLimits();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [, setSelectedFile] = useState<File | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
