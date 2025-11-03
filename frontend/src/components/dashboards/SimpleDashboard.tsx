@@ -26,19 +26,40 @@ export function SimpleDashboard() {
 
   // Cargar videos desde localStorage
   useEffect(() => {
+    console.log('👤 Usuario:', user?.id, '| Tier:', tier);
     if (user) {
-      const savedVideos = localStorage.getItem(`videos_${user.id}`);
+      const key = `videos_${user.id}`;
+      const savedVideos = localStorage.getItem(key);
+      console.log(`📦 Cargando videos de localStorage (${key}):`, savedVideos ? 'encontrado' : 'vacío');
       if (savedVideos) {
-        setVideos(JSON.parse(savedVideos));
+        try {
+          const parsedVideos = JSON.parse(savedVideos);
+          setVideos(parsedVideos);
+          console.log(`✅ Videos cargados:`, parsedVideos.length, 'videos');
+        } catch (error) {
+          console.error('❌ Error parseando videos:', error);
+        }
       }
     }
   }, [user]);
 
   // Guardar videos en localStorage
   const saveVideos = (newVideos: VideoProject[]) => {
-    if (user) {
-      localStorage.setItem(`videos_${user.id}`, JSON.stringify(newVideos));
+    if (!user) {
+      console.error('❌ No hay usuario para guardar videos');
+      alert('Error: Usuario no identificado');
+      return;
+    }
+
+    try {
+      const key = `videos_${user.id}`;
+      const data = JSON.stringify(newVideos);
+      localStorage.setItem(key, data);
       setVideos(newVideos);
+      console.log(`✅ Videos guardados en localStorage (${key}):`, newVideos.length, 'videos');
+    } catch (error) {
+      console.error('❌ Error guardando en localStorage:', error);
+      alert('Error al guardar el video. Tu navegador puede tener el almacenamiento lleno.');
     }
   };
 
@@ -73,12 +94,20 @@ export function SimpleDashboard() {
   };
 
   const processVideoFile = async (file: File) => {
-    // Validar tamaño máximo de duración (por ahora solo validamos tamaño de archivo)
-    const maxSizeGB = limits.storage / (1024 * 1024 * 1024);
-    const fileSizeGB = file.size / (1024 * 1024 * 1024);
+    console.log('🎬 Procesando video:', file.name, 'Tamaño:', formatFileSize(file.size));
 
-    if (fileSizeGB > maxSizeGB) {
-      alert(`El archivo es muy grande. Máximo: ${maxSizeGB}GB`);
+    // Validar que sea un video
+    if (!file.type.startsWith('video/')) {
+      alert('Por favor selecciona un archivo de video válido');
+      return;
+    }
+
+    // Validar tamaño máximo (100MB por ahora para evitar problemas de memoria)
+    const maxSizeMB = 100;
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    if (fileSizeMB > maxSizeMB) {
+      alert(`El archivo es muy grande. Máximo: ${maxSizeMB}MB`);
       return;
     }
 
@@ -86,8 +115,17 @@ export function SimpleDashboard() {
     setSelectedFile(file);
 
     try {
-      // Crear thumbnail del video
-      const thumbnail = await createVideoThumbnail(file);
+      console.log('📸 Generando thumbnail...');
+
+      // Crear thumbnail del video (puede fallar, no es crítico)
+      let thumbnail = '';
+      try {
+        thumbnail = await createVideoThumbnail(file);
+        console.log('✅ Thumbnail generado');
+      } catch (thumbError) {
+        console.warn('⚠️ No se pudo generar thumbnail:', thumbError);
+        // Continuar sin thumbnail
+      }
 
       // Crear nuevo proyecto de video
       const newVideo: VideoProject = {
@@ -100,13 +138,16 @@ export function SimpleDashboard() {
         createdAt: new Date().toISOString(),
       };
 
+      console.log('💾 Guardando video:', newVideo);
+
       const updatedVideos = [newVideo, ...videos];
       saveVideos(updatedVideos);
 
+      console.log('✅ Video guardado exitosamente');
       alert('✅ Video subido exitosamente!');
     } catch (error) {
-      console.error('Error processing video:', error);
-      alert('Error al procesar el video');
+      console.error('❌ Error processing video:', error);
+      alert(`Error al procesar el video: ${error}`);
     } finally {
       setUploading(false);
       setSelectedFile(null);
@@ -114,30 +155,51 @@ export function SimpleDashboard() {
   };
 
   const createVideoThumbnail = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
+      const objectUrl = URL.createObjectURL(file);
+
+      // Timeout de 10 segundos para generar thumbnail
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Timeout generando thumbnail'));
+      }, 10000);
 
       video.preload = 'metadata';
-      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      video.playsInline = true;
+      video.src = objectUrl;
 
       video.onloadedmetadata = () => {
-        video.currentTime = 1; // Capturar frame en el segundo 1
+        // Buscar frame en 0.5 segundos (más seguro que el segundo 1)
+        video.currentTime = Math.min(0.5, video.duration / 2);
       };
 
       video.onseeked = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-        URL.revokeObjectURL(video.src);
+        try {
+          clearTimeout(timeout);
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 360;
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          URL.revokeObjectURL(objectUrl);
+          resolve(dataUrl);
+        } catch (error) {
+          URL.revokeObjectURL(objectUrl);
+          reject(error);
+        }
       };
 
-      video.onerror = () => {
-        resolve(''); // Thumbnail vacío si falla
-        URL.revokeObjectURL(video.src);
+      video.onerror = (error) => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Error cargando video'));
       };
+
+      // Intentar cargar
+      video.load();
     });
   };
 
