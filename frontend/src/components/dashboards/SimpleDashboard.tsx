@@ -1,16 +1,168 @@
-import { useState } from 'react';
-import { Upload, Video, Download, Sparkles, Clock, FileVideo } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, Video, Download, Sparkles, Clock, FileVideo, Play, Trash2 } from 'lucide-react';
 import { useTierAccess } from '../../hooks/useTierAccess';
+import { useUser } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+
+interface VideoProject {
+  id: string;
+  name: string;
+  file: string; // base64 or URL
+  thumbnail: string;
+  size: string;
+  duration: string;
+  createdAt: string;
+}
 
 export function SimpleDashboard() {
   const { tier, getTierLimits } = useTierAccess();
+  const { user } = useUser();
+  const navigate = useNavigate();
   const limits = getTierLimits();
-  const [, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [videos, setVideos] = useState<VideoProject[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Cargar videos desde localStorage
+  useEffect(() => {
+    if (user) {
+      const savedVideos = localStorage.getItem(`videos_${user.id}`);
+      if (savedVideos) {
+        setVideos(JSON.parse(savedVideos));
+      }
+    }
+  }, [user]);
+
+  // Guardar videos en localStorage
+  const saveVideos = (newVideos: VideoProject[]) => {
+    if (user) {
+      localStorage.setItem(`videos_${user.id}`, JSON.stringify(newVideos));
+      setVideos(newVideos);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      await processVideoFile(file);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('video/')) {
+      await processVideoFile(file);
+    } else {
+      alert('Por favor, arrastra un archivo de video válido');
+    }
+  };
+
+  const processVideoFile = async (file: File) => {
+    // Validar tamaño máximo de duración (por ahora solo validamos tamaño de archivo)
+    const maxSizeGB = limits.storage / (1024 * 1024 * 1024);
+    const fileSizeGB = file.size / (1024 * 1024 * 1024);
+
+    if (fileSizeGB > maxSizeGB) {
+      alert(`El archivo es muy grande. Máximo: ${maxSizeGB}GB`);
+      return;
+    }
+
+    setUploading(true);
+    setSelectedFile(file);
+
+    try {
+      // Crear thumbnail del video
+      const thumbnail = await createVideoThumbnail(file);
+
+      // Crear nuevo proyecto de video
+      const newVideo: VideoProject = {
+        id: Date.now().toString(),
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        file: URL.createObjectURL(file), // En producción, esto sería una URL de Cloudflare R2
+        thumbnail: thumbnail,
+        size: formatFileSize(file.size),
+        duration: '00:00', // Se calcularía con el video
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedVideos = [newVideo, ...videos];
+      saveVideos(updatedVideos);
+
+      alert('✅ Video subido exitosamente!');
+    } catch (error) {
+      console.error('Error processing video:', error);
+      alert('Error al procesar el video');
+    } finally {
+      setUploading(false);
+      setSelectedFile(null);
+    }
+  };
+
+  const createVideoThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      video.preload = 'metadata';
+      video.src = URL.createObjectURL(file);
+
+      video.onloadedmetadata = () => {
+        video.currentTime = 1; // Capturar frame en el segundo 1
+      };
+
+      video.onseeked = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        URL.revokeObjectURL(video.src);
+      };
+
+      video.onerror = () => {
+        resolve(''); // Thumbnail vacío si falla
+        URL.revokeObjectURL(video.src);
+      };
+    });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    } else {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
+  };
+
+  const deleteVideo = (videoId: string) => {
+    if (confirm('¿Estás seguro de eliminar este video?')) {
+      const updatedVideos = videos.filter((v) => v.id !== videoId);
+      saveVideos(updatedVideos);
+    }
+  };
+
+  const openEditor = (videoId?: string) => {
+    if (videoId) {
+      navigate(`/editor/${videoId}`);
+    } else {
+      alert('Por favor, sube un video primero');
     }
   };
 
@@ -52,38 +204,64 @@ export function SimpleDashboard() {
         </div>
 
         {/* Main Upload Area */}
-        <div className="bg-gray-800/50 rounded-2xl p-12 mb-8 border-2 border-dashed border-gray-600 hover:border-blue-500/50 transition-all">
+        <div
+          className={`bg-gray-800/50 rounded-2xl p-12 mb-8 border-2 border-dashed transition-all ${
+            dragActive
+              ? 'border-blue-500 bg-blue-500/10'
+              : 'border-gray-600 hover:border-blue-500/50'
+          } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
           <div className="text-center">
             <div className="mb-6">
               <div className="inline-block p-6 bg-blue-600/20 rounded-full">
-                <Upload className="w-12 h-12 text-blue-400" />
+                {uploading ? (
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
+                ) : (
+                  <Upload className="w-12 h-12 text-blue-400" />
+                )}
               </div>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Sube tu video</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              {uploading ? 'Procesando video...' : 'Sube tu video'}
+            </h2>
             <p className="text-gray-400 mb-6">
-              Arrastra tu archivo aquí o haz clic para seleccionar
+              {uploading
+                ? 'Esto puede tomar unos segundos'
+                : 'Arrastra tu archivo aquí o haz clic para seleccionar'}
             </p>
-            <label className="inline-block">
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <span className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl font-semibold cursor-pointer inline-block shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                📁 Seleccionar Video
-              </span>
-            </label>
-            <p className="text-gray-500 text-sm mt-4">
-              Formatos soportados: MP4, MOV, AVI • Máx: {limits.maxVideoDuration / 60} minutos
-            </p>
+            {!uploading && (
+              <>
+                <label className="inline-block">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <span className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl font-semibold cursor-pointer inline-block shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                    📁 Seleccionar Video
+                  </span>
+                </label>
+                <p className="text-gray-500 text-sm mt-4">
+                  Formatos soportados: MP4, MOV, AVI • Máx: {limits.maxVideoDuration / 60} minutos
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Quick Actions - Simple Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           {/* Action 1: Cortar */}
-          <div className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-blue-500/50">
+          <button
+            onClick={() => openEditor(videos[0]?.id)}
+            disabled={videos.length === 0}
+            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+          >
             <div className="flex items-center mb-4">
               <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-all">
                 <Video className="w-6 h-6 text-blue-400" />
@@ -93,10 +271,23 @@ export function SimpleDashboard() {
             <p className="text-gray-400 text-sm">
               Recorta y ajusta tus videos de forma sencilla
             </p>
-          </div>
+          </button>
 
           {/* Action 2: Mejorar */}
-          <div className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-purple-500/50">
+          <button
+            onClick={() =>
+              tier === 'starter'
+                ? (window.location.href = '/pricing')
+                : openEditor(videos[0]?.id)
+            }
+            disabled={videos.length === 0 && tier !== 'starter'}
+            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left relative"
+          >
+            {tier === 'starter' && (
+              <span className="absolute top-3 right-3 bg-purple-600 text-xs px-2 py-1 rounded-full font-semibold">
+                PRO
+              </span>
+            )}
             <div className="flex items-center mb-4">
               <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-all">
                 <Sparkles className="w-6 h-6 text-purple-400" />
@@ -104,12 +295,18 @@ export function SimpleDashboard() {
               <h3 className="text-lg font-semibold ml-3">Mejorar IA</h3>
             </div>
             <p className="text-gray-400 text-sm">
-              Mejora automática con inteligencia artificial
+              {tier === 'starter'
+                ? 'Mejora con IA disponible en Creator y Professional'
+                : 'Mejora automática con inteligencia artificial'}
             </p>
-          </div>
+          </button>
 
           {/* Action 3: Exportar */}
-          <div className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-green-500/50">
+          <button
+            onClick={() => videos.length > 0 && alert('Funcionalidad de descarga próximamente')}
+            disabled={videos.length === 0}
+            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left"
+          >
             <div className="flex items-center mb-4">
               <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-all">
                 <Download className="w-6 h-6 text-green-400" />
@@ -119,7 +316,7 @@ export function SimpleDashboard() {
             <p className="text-gray-400 text-sm">
               Exporta tu video listo para compartir
             </p>
-          </div>
+          </button>
         </div>
 
         {/* Recent Videos */}
@@ -127,25 +324,86 @@ export function SimpleDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold flex items-center">
               <Clock className="w-5 h-5 mr-2 text-gray-400" />
-              Videos Recientes
+              Videos Recientes ({videos.length})
             </h3>
-            <button className="text-blue-400 hover:text-blue-300 text-sm font-semibold">
-              Ver todos →
-            </button>
+            {videos.length > 0 && (
+              <button className="text-blue-400 hover:text-blue-300 text-sm font-semibold">
+                Ver todos →
+              </button>
+            )}
           </div>
 
-          {/* Empty State */}
-          <div className="text-center py-12">
-            <div className="inline-block p-4 bg-gray-700/30 rounded-full mb-4">
-              <FileVideo className="w-8 h-8 text-gray-500" />
+          {videos.length === 0 ? (
+            /* Empty State */
+            <div className="text-center py-12">
+              <div className="inline-block p-4 bg-gray-700/30 rounded-full mb-4">
+                <FileVideo className="w-8 h-8 text-gray-500" />
+              </div>
+              <p className="text-gray-400">Aún no has subido ningún video</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Sube tu primer video para empezar
+              </p>
             </div>
-            <p className="text-gray-400">
-              Aún no has subido ningún video
-            </p>
-            <p className="text-gray-500 text-sm mt-1">
-              Sube tu primer video para empezar
-            </p>
-          </div>
+          ) : (
+            /* Videos Grid */
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {videos.slice(0, 6).map((video) => (
+                <div
+                  key={video.id}
+                  className="bg-gray-700/50 rounded-lg overflow-hidden border border-gray-600 hover:border-blue-500/50 transition-all group"
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video bg-gray-900">
+                    {video.thumbnail ? (
+                      <img
+                        src={video.thumbnail}
+                        alt={video.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FileVideo className="w-12 h-12 text-gray-600" />
+                      </div>
+                    )}
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={() => openEditor(video.id)}
+                        className="bg-blue-600 hover:bg-blue-700 rounded-full p-3 transform transition-transform group-hover:scale-110"
+                      >
+                        <Play className="w-6 h-6 text-white" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sm text-white truncate flex-1">
+                        {video.name}
+                      </h4>
+                      <button
+                        onClick={() => deleteVideo(video.id)}
+                        className="text-gray-400 hover:text-red-400 ml-2"
+                        title="Eliminar video"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{video.size}</span>
+                      <span>
+                        {new Date(video.createdAt).toLocaleDateString('es-ES', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Help Section */}
