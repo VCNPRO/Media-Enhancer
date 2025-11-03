@@ -94,11 +94,12 @@ export function SimpleDashboard() {
   };
 
   const processVideoFile = async (file: File) => {
-    console.log('🎬 Procesando video:', file.name, 'Tamaño:', formatFileSize(file.size));
+    console.log('🎬 INICIANDO - Procesando video:', file.name, 'Tamaño:', formatFileSize(file.size), 'Tipo:', file.type);
 
     // Validar que sea un video
     if (!file.type.startsWith('video/')) {
-      alert('Por favor selecciona un archivo de video válido');
+      console.error('❌ Tipo de archivo inválido:', file.type);
+      alert('Por favor selecciona un archivo de video válido (MP4, MOV, AVI)');
       return;
     }
 
@@ -106,51 +107,80 @@ export function SimpleDashboard() {
     const maxSizeMB = 100;
     const fileSizeMB = file.size / (1024 * 1024);
 
+    console.log(`📊 Tamaño del archivo: ${fileSizeMB.toFixed(2)}MB / ${maxSizeMB}MB`);
+
     if (fileSizeMB > maxSizeMB) {
-      alert(`El archivo es muy grande. Máximo: ${maxSizeMB}MB`);
+      console.error(`❌ Archivo muy grande: ${fileSizeMB.toFixed(2)}MB > ${maxSizeMB}MB`);
+      alert(`El archivo es muy grande (${fileSizeMB.toFixed(0)}MB). Máximo: ${maxSizeMB}MB`);
       return;
     }
 
+    if (!user) {
+      console.error('❌ No hay usuario logueado');
+      alert('Error: Debes estar logueado para subir videos');
+      return;
+    }
+
+    console.log('✅ Validaciones pasadas, iniciando upload...');
     setUploading(true);
     setSelectedFile(file);
 
+    // Pequeño delay para mostrar el estado de "subiendo"
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
-      console.log('📸 Generando thumbnail...');
-
-      // Crear thumbnail del video (puede fallar, no es crítico)
-      let thumbnail = '';
-      try {
-        thumbnail = await createVideoThumbnail(file);
-        console.log('✅ Thumbnail generado');
-      } catch (thumbError) {
-        console.warn('⚠️ No se pudo generar thumbnail:', thumbError);
-        // Continuar sin thumbnail
-      }
-
-      // Crear nuevo proyecto de video
+      // Crear nuevo proyecto de video SIN THUMBNAIL (por ahora)
       const newVideo: VideoProject = {
         id: Date.now().toString(),
         name: file.name.replace(/\.[^/.]+$/, ''),
-        file: URL.createObjectURL(file), // En producción, esto sería una URL de Cloudflare R2
-        thumbnail: thumbnail,
+        file: URL.createObjectURL(file),
+        thumbnail: '', // Sin thumbnail por ahora para evitar problemas
         size: formatFileSize(file.size),
-        duration: '00:00', // Se calcularía con el video
+        duration: '00:00',
         createdAt: new Date().toISOString(),
       };
 
-      console.log('💾 Guardando video:', newVideo);
+      console.log('💾 GUARDANDO VIDEO:', {
+        id: newVideo.id,
+        name: newVideo.name,
+        size: newVideo.size,
+        userId: user.id
+      });
 
       const updatedVideos = [newVideo, ...videos];
+
+      console.log('📝 Videos antes de guardar:', videos.length);
+      console.log('📝 Videos después de añadir:', updatedVideos.length);
+
       saveVideos(updatedVideos);
 
-      console.log('✅ Video guardado exitosamente');
+      console.log('✅✅✅ VIDEO GUARDADO EXITOSAMENTE ✅✅✅');
+
+      // Generar thumbnail en background (no bloquea)
+      setTimeout(async () => {
+        try {
+          console.log('🖼️ Generando thumbnail en background...');
+          const thumbnail = await createVideoThumbnail(file);
+
+          // Actualizar el video con el thumbnail
+          const videosWithThumb = updatedVideos.map(v =>
+            v.id === newVideo.id ? { ...v, thumbnail } : v
+          );
+          saveVideos(videosWithThumb);
+          console.log('✅ Thumbnail añadido');
+        } catch (e) {
+          console.warn('⚠️ No se pudo generar thumbnail (no crítico):', e);
+        }
+      }, 500);
+
       alert('✅ Video subido exitosamente!');
     } catch (error) {
-      console.error('❌ Error processing video:', error);
-      alert(`Error al procesar el video: ${error}`);
+      console.error('❌❌❌ ERROR CRÍTICO:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setUploading(false);
       setSelectedFile(null);
+      console.log('🏁 Proceso de upload finalizado');
     }
   };
 
