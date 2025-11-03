@@ -7,55 +7,55 @@ const plans = [
     id: 'starter',
     name: 'Starter',
     price: 0,
-    interval: 'month',
-    description: 'Perfect for trying out Media Enhancer',
+    interval: 'mes',
+    description: 'Perfecto para probar Media Enhancer',
     features: [
-      '5GB Storage',
-      '10 Projects',
-      '50 Exports/month',
-      'Up to 5 min videos',
-      'Basic editing tools',
-      'Watermark on exports',
+      '5GB de Almacenamiento',
+      '10 Proyectos',
+      '50 Exportaciones/mes',
+      'Videos de hasta 5 min',
+      'Herramientas básicas de edición',
+      'Marca de agua en exportaciones',
     ],
-    cta: 'Get Started Free',
+    cta: 'Comenzar Gratis',
     highlighted: false,
   },
   {
     id: 'creator',
     name: 'Creator',
     price: 14.99,
-    interval: 'month',
-    description: 'For content creators and small teams',
+    interval: 'mes',
+    description: 'Para creadores de contenido y equipos pequeños',
     features: [
-      '50GB Storage',
-      '100 Projects',
-      '500 Exports/month',
-      'Up to 30 min videos',
-      'AI Enhancements',
-      'No watermark',
-      'Priority rendering',
+      '50GB de Almacenamiento',
+      '100 Proyectos',
+      '500 Exportaciones/mes',
+      'Videos de hasta 30 min',
+      'Mejoras con IA',
+      'Sin marca de agua',
+      'Renderizado prioritario',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Comenzar Prueba Gratis',
     highlighted: true,
   },
   {
     id: 'professional',
     name: 'Professional',
     price: 49.99,
-    interval: 'month',
-    description: 'For professionals and agencies',
+    interval: 'mes',
+    description: 'Para profesionales y agencias',
     features: [
-      '500GB Storage',
-      'Unlimited Projects',
-      'Unlimited Exports',
-      'Up to 2 hour videos',
-      'Advanced AI Features',
-      'No watermark',
-      'Priority support',
-      'Team collaboration',
-      'API access',
+      '500GB de Almacenamiento',
+      'Proyectos Ilimitados',
+      'Exportaciones Ilimitadas',
+      'Videos de hasta 2 horas',
+      'Funciones IA Avanzadas',
+      'Sin marca de agua',
+      'Soporte prioritario',
+      'Colaboración en equipo',
+      'Acceso API',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Comenzar Prueba Gratis',
     highlighted: false,
   },
 ];
@@ -71,18 +71,18 @@ export default function PricingPage() {
         </Link>
         <nav className="flex items-center gap-4">
           <Link to="/" className="hover:text-blue-400 transition">
-            Home
+            Inicio
           </Link>
           <SignedOut>
             <SignUpButton mode="modal">
               <button className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                Get Started
+                Comenzar
               </button>
             </SignUpButton>
           </SignedOut>
           <SignedIn>
             <Link to="/dashboard" className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-              Dashboard
+              Panel
             </Link>
           </SignedIn>
         </nav>
@@ -91,9 +91,9 @@ export default function PricingPage() {
       {/* Pricing Section */}
       <main className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
+          <h2 className="text-5xl font-bold mb-4">Precios Simples y Transparentes</h2>
           <p className="text-xl text-gray-300">
-            Choose the plan that fits your needs. Upgrade or downgrade anytime.
+            Elige el plan que se adapte a tus necesidades. Actualiza o cambia en cualquier momento.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function PricingPage() {
               {plan.highlighted && (
                 <div className="text-center mb-4">
                   <span className="bg-yellow-500 text-gray-900 px-3 py-1 rounded-full text-sm font-semibold">
-                    MOST POPULAR
+                    MÁS POPULAR
                   </span>
                 </div>
               )}
@@ -150,7 +150,7 @@ export default function PricingPage() {
                       : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                 >
-                  {plan.id === 'starter' ? 'Current Plan' : 'Upgrade Now'}
+                  {plan.id === 'starter' ? 'Plan Actual' : 'Actualizar Ahora'}
                 </Link>
               </SignedIn>
             </div>
@@ -160,7 +160,7 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="container mx-auto px-4 py-8 text-center text-gray-500 mt-20">
-        <p>&copy; 2024 Media Enhancer. All rights reserved.</p>
+        <p>&copy; 2024 Media Enhancer. Todos los derechos reservados.</p>
       </footer>
     </div>
   );
