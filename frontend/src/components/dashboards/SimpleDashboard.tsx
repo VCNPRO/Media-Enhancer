@@ -265,20 +265,20 @@ export function SimpleDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-8 py-6">
+      <div className="max-w-[1920px] mx-auto">
         {/* Welcome Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-4">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-6">
             ¡Bienvenido a Media Enhancer!
           </h1>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 text-xl">
             Edita tus videos de forma simple y rápida
           </p>
         </div>
 
         {/* Plan Badge */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-6 mb-8 border border-blue-500/30">
+        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 mb-10 border border-blue-500/30">
           <div className="flex items-center justify-between">
             <div>
               <span className="inline-block bg-blue-500/20 text-blue-300 px-4 py-1 rounded-full text-sm font-semibold mb-2">
@@ -303,7 +303,7 @@ export function SimpleDashboard() {
 
         {/* Main Upload Area */}
         <div
-          className={`bg-gray-800/50 rounded-2xl p-12 mb-8 border-2 border-dashed transition-all ${
+          className={`bg-gray-800/50 rounded-2xl p-16 mb-10 border-2 border-dashed transition-all ${
             dragActive
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-gray-600 hover:border-blue-500/50'
@@ -353,7 +353,7 @@ export function SimpleDashboard() {
         </div>
 
         {/* Quick Actions - Simple Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 gap-8 mb-10">
           {/* Action 1: Cortar */}
           <button
             onClick={() => openEditor(videos[0]?.id)}
@@ -418,7 +418,7 @@ export function SimpleDashboard() {
         </div>
 
         {/* Recent Videos */}
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700" data-videos-section>
+        <div className="bg-gray-800/50 rounded-xl p-8 border border-gray-700" data-videos-section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold flex items-center">
               <Clock className="w-5 h-5 mr-2 text-gray-400" />
@@ -444,8 +444,8 @@ export function SimpleDashboard() {
             </div>
           ) : (
             /* Videos Grid */
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {videos.slice(0, 6).map((video) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+              {videos.slice(0, 10).map((video) => (
                 <div
                   key={video.id}
                   className="bg-gray-700/50 rounded-lg overflow-hidden border border-gray-600 hover:border-blue-500/50 transition-all group"
