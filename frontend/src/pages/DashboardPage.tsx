@@ -1,6 +1,7 @@
 import { useTierAccess } from '../hooks/useTierAccess';
 import { SimpleDashboard } from '../components/dashboards/SimpleDashboard';
 import { ProDashboard } from '../components/dashboards/ProDashboard';
+import { TierSelector } from '../components/TierSelector';
 
 export function DashboardPage() {
   const { tier, loading } = useTierAccess();
@@ -17,11 +18,13 @@ export function DashboardPage() {
     );
   }
 
-  // Show ProDashboard for professional users
-  if (tier === 'professional') {
-    return <ProDashboard />;
-  }
+  return (
+    <>
+      {/* Show ProDashboard for professional users */}
+      {tier === 'professional' ? <ProDashboard /> : <SimpleDashboard />}
 
-  // Show SimpleDashboard for starter and creator users
-  return <SimpleDashboard />;
+      {/* Tier selector (development only) */}
+      <TierSelector />
+    </>
+  );
 }

@@ -17,6 +17,79 @@ const getStripe = () => {
 // All routes require authentication
 router.use(requireAuth);
 
+// Almacenamiento temporal de tiers (en memoria)
+// TODO: Reemplazar con base de datos en producción
+const userTiers = new Map<string, string>();
+
+// Get user subscription status (used by frontend)
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = req.auth?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { message: 'Unauthorized' },
+      });
+    }
+
+    // Obtener tier del almacenamiento temporal o usar 'starter' por defecto
+    const tier = userTiers.get(userId) || 'starter';
+
+    res.json({
+      success: true,
+      data: {
+        tier: tier,
+        status: 'active',
+        userId: userId,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to get subscription' },
+    });
+  }
+});
+
+// Set user tier (temporal para testing)
+router.post('/set-tier', async (req: Request, res: Response) => {
+  try {
+    const userId = req.auth?.userId;
+    const { tier } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { message: 'Unauthorized' },
+      });
+    }
+
+    if (!['starter', 'creator', 'professional'].includes(tier)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Invalid tier' },
+      });
+    }
+
+    // Guardar tier en memoria
+    userTiers.set(userId, tier);
+
+    res.json({
+      success: true,
+      data: {
+        tier: tier,
+        message: 'Tier actualizado exitosamente',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to set tier' },
+    });
+  }
+});
+
 // Get available plans
 router.get('/plans', async (req: Request, res: Response) => {
   try {
