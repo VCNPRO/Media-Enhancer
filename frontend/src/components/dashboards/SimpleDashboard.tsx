@@ -427,7 +427,7 @@ export function SimpleDashboard() {
               <p className="text-gray-400 text-sm">Aún no has subido videos</p>
             </div>
           ) : (
-            /* Videos Grid */}
+            /* Videos Grid */
             <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
               {videos.slice(0, 12).map((video) => (
                 <div
