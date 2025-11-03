@@ -265,167 +265,154 @@ export function SimpleDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-8 py-6">
-      <div className="max-w-[1920px] mx-auto">
-        {/* Welcome Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-6">
-            ¡Bienvenido a Media Enhancer!
-          </h1>
-          <p className="text-gray-400 text-xl">
-            Edita tus videos de forma simple y rápida
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+      <div className="max-w-[1600px] mx-auto">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">
+              Media Enhancer
+            </h1>
+            <p className="text-sm text-gray-400">
+              Plan {tier === 'starter' ? 'Starter' : 'Creator'} • {limits.maxVideoDuration / 60} min • {limits.maxResolution}
+            </p>
+          </div>
+          {tier !== 'professional' && (
+            <button
+              onClick={() => (window.location.href = '/pricing')}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            >
+              ⚡ Mejorar Plan
+            </button>
+          )}
         </div>
 
-        {/* Plan Badge */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 mb-10 border border-blue-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="inline-block bg-blue-500/20 text-blue-300 px-4 py-1 rounded-full text-sm font-semibold mb-2">
-                Plan {tier === 'starter' ? 'Starter' : 'Creator'}
-              </span>
-              <p className="text-gray-300 mt-2">
-                📹 Hasta {limits.maxVideoDuration / 60} min de video •
-                🎬 Resolución {limits.maxResolution} •
-                💾 {limits.storage / (1024 * 1024 * 1024)}GB de almacenamiento
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-2 gap-4 mb-4">
+          {/* Left: Upload Area */}
+          <div
+            className={`bg-gray-800/50 rounded-xl p-6 border-2 border-dashed transition-all ${
+              dragActive
+                ? 'border-blue-500 bg-blue-500/10'
+                : 'border-gray-600 hover:border-blue-500/50'
+            } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="inline-block p-4 bg-blue-600/20 rounded-full">
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-400"></div>
+                  ) : (
+                    <Upload className="w-8 h-8 text-blue-400" />
+                  )}
+                </div>
+              </div>
+              <h2 className="text-lg font-bold mb-1">
+                {uploading ? 'Procesando...' : 'Sube tu video'}
+              </h2>
+              <p className="text-gray-400 text-sm mb-4">
+                {uploading
+                  ? 'Espera un momento'
+                  : 'Arrastra aquí o selecciona'}
               </p>
+              {!uploading && (
+                <>
+                  <label className="inline-block">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <span className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-sm font-semibold cursor-pointer inline-block transition-all">
+                      📁 Seleccionar
+                    </span>
+                  </label>
+                  <p className="text-gray-500 text-xs mt-3">
+                    MP4, MOV, AVI • Máx {limits.maxVideoDuration / 60} min
+                  </p>
+                </>
+              )}
             </div>
-            {tier !== 'professional' && (
-              <button
-                onClick={() => (window.location.href = '/pricing')}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-              >
-                ⚡ Mejorar Plan
-              </button>
-            )}
           </div>
-        </div>
 
-        {/* Main Upload Area */}
-        <div
-          className={`bg-gray-800/50 rounded-2xl p-16 mb-10 border-2 border-dashed transition-all ${
-            dragActive
-              ? 'border-blue-500 bg-blue-500/10'
-              : 'border-gray-600 hover:border-blue-500/50'
-          } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <div className="text-center">
-            <div className="mb-6">
-              <div className="inline-block p-6 bg-blue-600/20 rounded-full">
-                {uploading ? (
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
-                ) : (
-                  <Upload className="w-12 h-12 text-blue-400" />
-                )}
+          {/* Right: Quick Actions */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Action 1: Cortar */}
+            <button
+              onClick={() => openEditor(videos[0]?.id)}
+              disabled={videos.length === 0}
+              className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-center"
+            >
+              <div className="flex justify-center mb-2">
+                <div className="p-2 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-all">
+                  <Video className="w-5 h-5 text-blue-400" />
+                </div>
               </div>
-            </div>
-            <h2 className="text-2xl font-bold mb-2">
-              {uploading ? 'Procesando video...' : 'Sube tu video'}
-            </h2>
-            <p className="text-gray-400 mb-6">
-              {uploading
-                ? 'Esto puede tomar unos segundos'
-                : 'Arrastra tu archivo aquí o haz clic para seleccionar'}
-            </p>
-            {!uploading && (
-              <>
-                <label className="inline-block">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <span className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl font-semibold cursor-pointer inline-block shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                    📁 Seleccionar Video
-                  </span>
-                </label>
-                <p className="text-gray-500 text-sm mt-4">
-                  Formatos soportados: MP4, MOV, AVI • Máx: {limits.maxVideoDuration / 60} minutos
-                </p>
-              </>
-            )}
+              <h3 className="text-sm font-semibold mb-1">Cortar</h3>
+              <p className="text-gray-400 text-xs">
+                Recorta videos
+              </p>
+            </button>
+
+            {/* Action 2: Mejorar */}
+            <button
+              onClick={() =>
+                tier === 'starter'
+                  ? (window.location.href = '/pricing')
+                  : openEditor(videos[0]?.id)
+              }
+              disabled={videos.length === 0 && tier !== 'starter'}
+              className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-center relative"
+            >
+              {tier === 'starter' && (
+                <span className="absolute top-2 right-2 bg-purple-600 text-xs px-1.5 py-0.5 rounded font-semibold">
+                  PRO
+                </span>
+              )}
+              <div className="flex justify-center mb-2">
+                <div className="p-2 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-all">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                </div>
+              </div>
+              <h3 className="text-sm font-semibold mb-1">Mejorar IA</h3>
+              <p className="text-gray-400 text-xs">
+                {tier === 'starter' ? 'Upgrade' : 'Mejora con IA'}
+              </p>
+            </button>
+
+            {/* Action 3: Exportar */}
+            <button
+              onClick={() => videos.length > 0 && alert('Funcionalidad de descarga próximamente')}
+              disabled={videos.length === 0}
+              className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-center"
+            >
+              <div className="flex justify-center mb-2">
+                <div className="p-2 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-all">
+                  <Download className="w-5 h-5 text-green-400" />
+                </div>
+              </div>
+              <h3 className="text-sm font-semibold mb-1">Descargar</h3>
+              <p className="text-gray-400 text-xs">
+                Exportar video
+              </p>
+            </button>
           </div>
-        </div>
-
-        {/* Quick Actions - Simple Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-10">
-          {/* Action 1: Cortar */}
-          <button
-            onClick={() => openEditor(videos[0]?.id)}
-            disabled={videos.length === 0}
-            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left"
-          >
-            <div className="flex items-center mb-4">
-              <div className="p-3 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-all">
-                <Video className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold ml-3">Cortar Video</h3>
-            </div>
-            <p className="text-gray-400 text-sm">
-              Recorta y ajusta tus videos de forma sencilla
-            </p>
-          </button>
-
-          {/* Action 2: Mejorar */}
-          <button
-            onClick={() =>
-              tier === 'starter'
-                ? (window.location.href = '/pricing')
-                : openEditor(videos[0]?.id)
-            }
-            disabled={videos.length === 0 && tier !== 'starter'}
-            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left relative"
-          >
-            {tier === 'starter' && (
-              <span className="absolute top-3 right-3 bg-purple-600 text-xs px-2 py-1 rounded-full font-semibold">
-                PRO
-              </span>
-            )}
-            <div className="flex items-center mb-4">
-              <div className="p-3 bg-purple-600/20 rounded-lg group-hover:bg-purple-600/30 transition-all">
-                <Sparkles className="w-6 h-6 text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold ml-3">Mejorar IA</h3>
-            </div>
-            <p className="text-gray-400 text-sm">
-              {tier === 'starter'
-                ? 'Mejora con IA disponible en Creator y Professional'
-                : 'Mejora automática con inteligencia artificial'}
-            </p>
-          </button>
-
-          {/* Action 3: Exportar */}
-          <button
-            onClick={() => videos.length > 0 && alert('Funcionalidad de descarga próximamente')}
-            disabled={videos.length === 0}
-            className="bg-gray-800/50 rounded-xl p-6 hover:bg-gray-800/70 transition-all cursor-pointer group border border-gray-700 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-left"
-          >
-            <div className="flex items-center mb-4">
-              <div className="p-3 bg-green-600/20 rounded-lg group-hover:bg-green-600/30 transition-all">
-                <Download className="w-6 h-6 text-green-400" />
-              </div>
-              <h3 className="text-lg font-semibold ml-3">Descargar</h3>
-            </div>
-            <p className="text-gray-400 text-sm">
-              Exporta tu video listo para compartir
-            </p>
-          </button>
         </div>
 
         {/* Recent Videos */}
-        <div className="bg-gray-800/50 rounded-xl p-8 border border-gray-700" data-videos-section>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-gray-400" />
-              Videos Recientes ({videos.length})
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700" data-videos-section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold flex items-center">
+              <Clock className="w-4 h-4 mr-2 text-gray-400" />
+              Videos ({videos.length})
             </h3>
             {videos.length > 0 && (
-              <button className="text-blue-400 hover:text-blue-300 text-sm font-semibold">
+              <button className="text-blue-400 hover:text-blue-300 text-xs font-semibold">
                 Ver todos →
               </button>
             )}
@@ -433,19 +420,16 @@ export function SimpleDashboard() {
 
           {videos.length === 0 ? (
             /* Empty State */
-            <div className="text-center py-12">
-              <div className="inline-block p-4 bg-gray-700/30 rounded-full mb-4">
-                <FileVideo className="w-8 h-8 text-gray-500" />
+            <div className="text-center py-8">
+              <div className="inline-block p-3 bg-gray-700/30 rounded-full mb-3">
+                <FileVideo className="w-6 h-6 text-gray-500" />
               </div>
-              <p className="text-gray-400">Aún no has subido ningún video</p>
-              <p className="text-gray-500 text-sm mt-1">
-                Sube tu primer video para empezar
-              </p>
+              <p className="text-gray-400 text-sm">Aún no has subido videos</p>
             </div>
           ) : (
-            /* Videos Grid */
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-              {videos.slice(0, 10).map((video) => (
+            /* Videos Grid */}
+            <div className="grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+              {videos.slice(0, 12).map((video) => (
                 <div
                   key={video.id}
                   className="bg-gray-700/50 rounded-lg overflow-hidden border border-gray-600 hover:border-blue-500/50 transition-all group"
@@ -513,21 +497,21 @@ export function SimpleDashboard() {
           )}
         </div>
 
-        {/* Help Section */}
-        <div className="mt-8 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-6 border border-blue-500/20">
-          <div className="flex items-start">
-            <span className="text-3xl mr-4">💡</span>
-            <div>
-              <h4 className="font-semibold text-lg mb-2">¿Primera vez usando Media Enhancer?</h4>
-              <p className="text-gray-400 text-sm mb-3">
-                Te ayudamos a empezar en 3 pasos simples:
+        {/* Help Section - Compact */}
+        <div className="mt-4 bg-blue-900/10 rounded-lg p-3 border border-blue-500/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-xl mr-2">💡</span>
+              <p className="text-gray-400 text-xs">
+                <strong className="text-white">Nuevo aquí?</strong> Sube video → Edita → Descarga
               </p>
-              <ol className="list-decimal list-inside text-gray-300 text-sm space-y-1">
-                <li>Sube tu video desde tu ordenador</li>
-                <li>Selecciona qué quieres hacer (cortar, mejorar, etc.)</li>
-                <li>Descarga tu video editado</li>
-              </ol>
             </div>
+            <button
+              onClick={() => window.location.href = '/pricing'}
+              className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+            >
+              Ver planes
+            </button>
           </div>
         </div>
       </div>
