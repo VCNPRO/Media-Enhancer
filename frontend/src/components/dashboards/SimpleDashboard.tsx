@@ -19,7 +19,6 @@ export function SimpleDashboard() {
   const { user } = useUser();
   const navigate = useNavigate();
   const limits = getTierLimits();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videos, setVideos] = useState<VideoProject[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -123,7 +122,6 @@ export function SimpleDashboard() {
 
     console.log('✅ Validaciones pasadas, iniciando upload...');
     setUploading(true);
-    setSelectedFile(file);
 
     // Pequeño delay para mostrar el estado de "subiendo"
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -168,8 +166,8 @@ export function SimpleDashboard() {
           );
           saveVideos(videosWithThumb);
           console.log('✅ Thumbnail añadido');
-        } catch (e) {
-          console.warn('⚠️ No se pudo generar thumbnail (no crítico):', e);
+        } catch (thumbError) {
+          console.warn('⚠️ No se pudo generar thumbnail (no crítico):', thumbError);
         }
       }, 500);
 
@@ -179,7 +177,6 @@ export function SimpleDashboard() {
       alert(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setUploading(false);
-      setSelectedFile(null);
       console.log('🏁 Proceso de upload finalizado');
     }
   };
