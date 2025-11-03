@@ -154,6 +154,14 @@ export function SimpleDashboard() {
 
       console.log('✅✅✅ VIDEO GUARDADO EXITOSAMENTE ✅✅✅');
 
+      // Scroll a la sección de videos recientes
+      setTimeout(() => {
+        const videosSection = document.querySelector('[data-videos-section]');
+        if (videosSection) {
+          videosSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
+
       // Generar thumbnail en background (no bloquea)
       setTimeout(async () => {
         try {
@@ -171,7 +179,8 @@ export function SimpleDashboard() {
         }
       }, 500);
 
-      alert('✅ Video subido exitosamente!');
+      // Mejor mensaje de éxito
+      alert(`✅ ¡Video "${newVideo.name}" subido exitosamente!\n\n📹 Aparece en "Videos Recientes" más abajo`);
     } catch (error) {
       console.error('❌❌❌ ERROR CRÍTICO:', error);
       alert(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -409,7 +418,7 @@ export function SimpleDashboard() {
         </div>
 
         {/* Recent Videos */}
-        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+        <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700" data-videos-section>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold flex items-center">
               <Clock className="w-5 h-5 mr-2 text-gray-400" />
@@ -442,7 +451,7 @@ export function SimpleDashboard() {
                   className="bg-gray-700/50 rounded-lg overflow-hidden border border-gray-600 hover:border-blue-500/50 transition-all group"
                 >
                   {/* Thumbnail */}
-                  <div className="relative aspect-video bg-gray-900">
+                  <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900">
                     {video.thumbnail ? (
                       <img
                         src={video.thumbnail}
@@ -450,17 +459,22 @@ export function SimpleDashboard() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FileVideo className="w-12 h-12 text-gray-600" />
+                      <div className="w-full h-full flex flex-col items-center justify-center">
+                        <FileVideo className="w-16 h-16 text-blue-500 mb-2" />
+                        <span className="text-xs text-gray-500">Procesando...</span>
                       </div>
                     )}
                     {/* Play overlay */}
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
                       <button
-                        onClick={() => openEditor(video.id)}
-                        className="bg-blue-600 hover:bg-blue-700 rounded-full p-3 transform transition-transform group-hover:scale-110"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openEditor(video.id);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 rounded-full p-4 transform transition-transform group-hover:scale-110 shadow-lg"
                       >
-                        <Play className="w-6 h-6 text-white" />
+                        <Play className="w-8 h-8 text-white" />
                       </button>
                     </div>
                   </div>
@@ -472,7 +486,11 @@ export function SimpleDashboard() {
                         {video.name}
                       </h4>
                       <button
-                        onClick={() => deleteVideo(video.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          deleteVideo(video.id);
+                        }}
                         className="text-gray-400 hover:text-red-400 ml-2"
                         title="Eliminar video"
                       >
