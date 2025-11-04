@@ -3,7 +3,7 @@ import { Upload, Video, Download, Sparkles, Clock, FileVideo, Play, Trash2 } fro
 import { useTierAccess } from '../../hooks/useTierAccess';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { uploadFile, getMediaFiles } from '../../services/api';
+import { uploadFile } from '../../services/api';
 
 interface VideoProject {
   id: string;
