@@ -2,6 +2,9 @@
 builder = "NIXPACKS"
 buildCommand = "cd backend && npm install && npm run build"
 
+[build.env]
+NODE_VERSION = "20"
+
 [deploy]
 startCommand = "cd backend && npm start"
 restartPolicyType = "ON_FAILURE"
