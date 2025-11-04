@@ -3,6 +3,7 @@ import { Upload, Video, Download, Sparkles, Clock, FileVideo, Play, Trash2 } fro
 import { useTierAccess } from '../../hooks/useTierAccess';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
+import { uploadFile, getMediaFiles } from '../../services/api';
 
 interface VideoProject {
   id: string;
@@ -21,6 +22,8 @@ export function SimpleDashboard() {
   const limits = getTierLimits();
   const [videos, setVideos] = useState<VideoProject[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
   // Cargar videos desde localStorage
@@ -96,65 +99,58 @@ export function SimpleDashboard() {
     console.log('🎬 INICIANDO - Procesando video:', file.name, 'Tamaño:', formatFileSize(file.size), 'Tipo:', file.type);
 
     // Validar que sea un video
-    if (!file.type.startsWith('video/')) {
-      console.error('❌ Tipo de archivo inválido:', file.type);
-      alert('Por favor selecciona un archivo de video válido (MP4, MOV, AVI)');
+    if (!file.type.startsWith('video/') && !file.type.startsWith('audio/')) {
+      setUploadError('Por favor selecciona un archivo de video o audio válido');
       return;
     }
 
-    // Validar tamaño máximo (100MB por ahora para evitar problemas de memoria)
+    // Validar tamaño máximo (100MB)
     const maxSizeMB = 100;
     const fileSizeMB = file.size / (1024 * 1024);
 
-    console.log(`📊 Tamaño del archivo: ${fileSizeMB.toFixed(2)}MB / ${maxSizeMB}MB`);
-
     if (fileSizeMB > maxSizeMB) {
-      console.error(`❌ Archivo muy grande: ${fileSizeMB.toFixed(2)}MB > ${maxSizeMB}MB`);
-      alert(`El archivo es muy grande (${fileSizeMB.toFixed(0)}MB). Máximo: ${maxSizeMB}MB`);
+      setUploadError(`El archivo es muy grande (${fileSizeMB.toFixed(0)}MB). Máximo: ${maxSizeMB}MB`);
       return;
     }
 
     if (!user) {
-      console.error('❌ No hay usuario logueado');
-      alert('Error: Debes estar logueado para subir videos');
+      setUploadError('Error: Debes estar logueado para subir archivos');
       return;
     }
 
-    console.log('✅ Validaciones pasadas, iniciando upload...');
+    console.log('✅ Validaciones pasadas, subiendo al servidor...');
     setUploading(true);
-
-    // Pequeño delay para mostrar el estado de "subiendo"
-    await new Promise(resolve => setTimeout(resolve, 100));
+    setUploadProgress(0);
+    setUploadError(null);
 
     try {
-      // Crear nuevo proyecto de video SIN THUMBNAIL (por ahora)
+      // Subir archivo al backend con progreso
+      const response = await uploadFile(file, (progress) => {
+        console.log(`📊 Progreso: ${progress}%`);
+        setUploadProgress(progress);
+      });
+
+      console.log('✅✅✅ VIDEO SUBIDO AL SERVIDOR:', response);
+
+      // Crear entrada local (temporal hasta que tengamos listado desde BD)
       const newVideo: VideoProject = {
-        id: Date.now().toString(),
+        id: response.data.fileId,
         name: file.name.replace(/\.[^/.]+$/, ''),
         file: URL.createObjectURL(file),
-        thumbnail: '', // Sin thumbnail por ahora para evitar problemas
+        thumbnail: '',
         size: formatFileSize(file.size),
         duration: '00:00',
         createdAt: new Date().toISOString(),
       };
 
-      console.log('💾 GUARDANDO VIDEO:', {
-        id: newVideo.id,
-        name: newVideo.name,
-        size: newVideo.size,
-        userId: user.id
-      });
-
       const updatedVideos = [newVideo, ...videos];
-
-      console.log('📝 Videos antes de guardar:', videos.length);
-      console.log('📝 Videos después de añadir:', updatedVideos.length);
-
       saveVideos(updatedVideos);
 
-      console.log('✅✅✅ VIDEO GUARDADO EXITOSAMENTE ✅✅✅');
+      // Mostrar mensaje de éxito
+      setUploadError(null);
+      alert(`✅ ¡Archivo "${file.name}" subido exitosamente al servidor!\n\n📹 Aparece en "Videos Recientes" más abajo`);
 
-      // Scroll a la sección de videos recientes
+      // Scroll a la sección de videos
       setTimeout(() => {
         const videosSection = document.querySelector('[data-videos-section]');
         if (videosSection) {
@@ -162,30 +158,31 @@ export function SimpleDashboard() {
         }
       }, 200);
 
-      // Generar thumbnail en background (no bloquea)
+      // Generar thumbnail en background
       setTimeout(async () => {
         try {
-          console.log('🖼️ Generando thumbnail en background...');
           const thumbnail = await createVideoThumbnail(file);
-
-          // Actualizar el video con el thumbnail
           const videosWithThumb = updatedVideos.map(v =>
             v.id === newVideo.id ? { ...v, thumbnail } : v
           );
           saveVideos(videosWithThumb);
-          console.log('✅ Thumbnail añadido');
         } catch (thumbError) {
           console.warn('⚠️ No se pudo generar thumbnail (no crítico):', thumbError);
         }
       }, 500);
 
-      // Mejor mensaje de éxito
-      alert(`✅ ¡Video "${newVideo.name}" subido exitosamente!\n\n📹 Aparece en "Videos Recientes" más abajo`);
-    } catch (error) {
-      console.error('❌❌❌ ERROR CRÍTICO:', error);
-      alert(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    } catch (error: any) {
+      console.error('❌ ERROR SUBIENDO:', error);
+
+      // Mostrar mensaje específico del error
+      const errorMessage = error.message || 'Error al subir el archivo. Por favor, intenta de nuevo.';
+      setUploadError(errorMessage);
+
+      // Mostrar alert con el error
+      alert(`❌ Error: ${errorMessage}`);
     } finally {
       setUploading(false);
+      setUploadProgress(0);
       console.log('🏁 Proceso de upload finalizado');
     }
   };
@@ -312,28 +309,52 @@ export function SimpleDashboard() {
                 </div>
               </div>
               <h2 className="text-lg font-bold mb-1">
-                {uploading ? 'Procesando...' : 'Sube tu video'}
+                {uploading ? 'Subiendo al servidor...' : 'Sube tu video'}
               </h2>
               <p className="text-gray-400 text-sm mb-4">
                 {uploading
-                  ? 'Espera un momento'
+                  ? 'No cierres esta ventana'
                   : 'Arrastra aquí o selecciona'}
               </p>
+
+              {/* Progress Bar */}
+              {uploading && uploadProgress > 0 && (
+                <div className="mb-4">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs text-gray-300">Progreso</span>
+                    <span className="text-xs font-semibold text-blue-400">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {uploadError && (
+                <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md">
+                  <p className="text-sm text-red-200">{uploadError}</p>
+                </div>
+              )}
+
               {!uploading && (
                 <>
                   <label className="inline-block">
                     <input
                       type="file"
-                      accept="video/*"
+                      accept="video/*,audio/*"
                       onChange={handleFileSelect}
                       className="hidden"
                     />
                     <span className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-sm font-semibold cursor-pointer inline-block transition-all">
-                      📁 Seleccionar
+                      📁 Seleccionar Archivo
                     </span>
                   </label>
                   <p className="text-gray-500 text-xs mt-3">
-                    MP4, MOV, AVI • Máx {limits.maxVideoDuration / 60} min
+                    Video/Audio • Máx 100MB • {limits.maxVideoDuration / 60} min
                   </p>
                 </>
               )}

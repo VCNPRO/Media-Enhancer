@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Layout, Wand2, Database, Settings, FolderOpen,
   TrendingUp, Clock, Activity, Zap, Plus,
@@ -6,6 +6,7 @@ import {
   Upload, BarChart3, Users
 } from 'lucide-react';
 import { useTierAccess } from '../../hooks/useTierAccess';
+import { uploadFile } from '../../services/api';
 
 interface Project {
   id: string;
@@ -24,6 +25,9 @@ export function ProDashboard() {
   getTierLimits();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('projects');
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Mock data
   const projects: Project[] = [
@@ -55,6 +59,32 @@ export function ProDashboard() {
     { label: 'Videos Exportados', value: '124', change: '+18', icon: TrendingUp, color: 'orange' },
   ];
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const response = await uploadFile(file, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      console.log('✅ Archivo subido:', response);
+      alert(`✅ Archivo "${file.name}" subido exitosamente al servidor!`);
+    } catch (error: any) {
+      console.error('❌ Error subiendo:', error);
+      alert(`❌ Error: ${error.message || 'Error al subir el archivo'}`);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Top Bar - Professional */}
@@ -77,9 +107,31 @@ export function ProDashboard() {
 
             {/* Right: Quick Actions */}
             <div className="flex items-center space-x-3">
-              <button className="px-4 py-2 bg-gray-800 hover:bg-gray-750 rounded-lg text-sm font-medium flex items-center space-x-2 border border-gray-700 hover:border-gray-600 transition-all">
-                <Upload className="w-4 h-4" />
-                <span>Importar</span>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*,audio/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-750 rounded-lg text-sm font-medium flex items-center space-x-2 border border-gray-700 hover:border-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative"
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-400"></div>
+                    <span>{uploadProgress}%</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Importar</span>
+                  </>
+                )}
               </button>
               <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold flex items-center space-x-2 shadow-lg shadow-blue-600/20 transition-all">
                 <Plus className="w-4 h-4" />
