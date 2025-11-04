@@ -25,8 +25,12 @@ const upload = multer({
   },
 });
 
-// All routes require authentication
-router.use(requireAuth);
+// All routes require authentication (unless DISABLE_AUTH is set for testing)
+if (process.env.DISABLE_AUTH !== 'true') {
+  router.use(requireAuth);
+} else {
+  console.warn('⚠️ WARNING: Authentication is DISABLED. This is only for testing!');
+}
 
 // Upload media file
 router.post(
