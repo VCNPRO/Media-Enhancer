@@ -4,6 +4,9 @@ import { param, query, body } from 'express-validator';
 import { validate, isValidUUID, isValidMediaMimeType } from '../middleware/validation.middleware';
 import { uploadRateLimiter, aiProcessingRateLimiter } from '../middleware/rateLimit.middleware';
 import multer from 'multer';
+import r2Service from '../services/r2.service';
+import mediaService from '../services/media.service';
+import fs from 'fs/promises';
 
 const router = Router();
 
@@ -45,6 +48,9 @@ router.post(
       // Validar tamaño del archivo
       const maxSize = 100 * 1024 * 1024; // 100MB
       if (file.size > maxSize) {
+        // Eliminar archivo temporal
+        await fs.unlink(file.path).catch(() => {});
+
         return res.status(400).json({
           success: false,
           error: {
@@ -54,18 +60,53 @@ router.post(
         });
       }
 
-      // TODO: Upload to Cloudflare R2
-      // TODO: Create media record in database
       // TODO: Check user storage quota before upload
+
+      // Leer archivo como buffer
+      const fileBuffer = await fs.readFile(file.path);
+
+      let storageKey: string;
+      let storageUrl: string;
+
+      // Subir a R2 si está configurado
+      if (r2Service.isConfigured()) {
+        const key = r2Service.generateKey(userId!, file.originalname);
+        const uploadResult = await r2Service.uploadFile(fileBuffer, key, file.mimetype);
+        storageKey = uploadResult.key;
+        storageUrl = uploadResult.url;
+        console.log(`✅ File uploaded to R2: ${storageKey}`);
+      } else {
+        // Fallback: usar archivo local (solo para desarrollo)
+        console.warn('⚠️ R2 not configured, using local storage');
+        storageKey = `local/${userId}/${file.filename}`;
+        storageUrl = `/uploads/${file.filename}`;
+      }
+
+      // Crear registro en base de datos
+      const mediaFile = await mediaService.createMediaFile({
+        userId: userId!,
+        filename: file.filename,
+        originalFilename: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        storageKey,
+        storageUrl,
+      });
+
+      // Eliminar archivo temporal
+      await fs.unlink(file.path).catch(() => {});
+
+      console.log(`✅ Media file created: ${mediaFile.id}`);
 
       res.json({
         success: true,
         data: {
-          fileId: 'temp-id',
-          filename: file.originalname,
-          size: file.size,
-          mimeType: file.mimetype,
-          uploadedAt: new Date().toISOString(),
+          fileId: mediaFile.id,
+          filename: mediaFile.original_filename,
+          size: mediaFile.file_size,
+          mimeType: mediaFile.mime_type,
+          uploadedAt: mediaFile.created_at,
+          url: mediaFile.storage_url,
         },
       });
     } catch (error) {
@@ -113,27 +154,37 @@ router.get(
       // Parámetros de paginación
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const sortBy = (req.query.sortBy as string) || 'createdAt';
+      const sortBy = (req.query.sortBy as string) || 'created_at';
       const order = (req.query.order as string) || 'desc';
-      const offset = (page - 1) * limit;
 
-      // TODO: Fetch media files from database with pagination
-      // const result = await pool.query(
-      //   'SELECT * FROM media_files WHERE user_id = $1 ORDER BY $2 $3 LIMIT $4 OFFSET $5',
-      //   [userId, sortBy, order, limit, offset]
-      // );
+      // Obtener archivos desde la base de datos
+      const result = await mediaService.getUserMediaFiles(userId!, {
+        page,
+        limit,
+        sortBy,
+        order: order as 'asc' | 'desc',
+      });
 
-      const totalFiles = 0; // TODO: Get from database
-      const totalPages = Math.ceil(totalFiles / limit);
+      const totalPages = Math.ceil(result.total / limit);
 
       res.json({
         success: true,
         data: {
-          files: [],
+          files: result.files.map((file) => ({
+            id: file.id,
+            filename: file.original_filename,
+            size: file.file_size,
+            mimeType: file.mime_type,
+            url: file.storage_url,
+            thumbnailUrl: file.thumbnail_url,
+            status: file.status,
+            createdAt: file.created_at,
+            updatedAt: file.updated_at,
+          })),
           pagination: {
             page,
             limit,
-            totalFiles,
+            totalFiles: result.total,
             totalPages,
             hasNextPage: page < totalPages,
             hasPrevPage: page > 1,
@@ -159,14 +210,31 @@ router.get(
       const userId = req.auth?.userId;
       const { id } = req.params;
 
-      // TODO: Fetch media file from database
-      // TODO: Verify that the file belongs to the user
+      // Obtener archivo desde la base de datos
+      const mediaFile = await mediaService.getMediaFileById(id, userId!);
+
+      if (!mediaFile) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'File not found',
+            code: 'FILE_NOT_FOUND',
+          },
+        });
+      }
 
       res.json({
         success: true,
         data: {
-          fileId: id,
-          // Add file data here
+          id: mediaFile.id,
+          filename: mediaFile.original_filename,
+          size: mediaFile.file_size,
+          mimeType: mediaFile.mime_type,
+          url: mediaFile.storage_url,
+          thumbnailUrl: mediaFile.thumbnail_url,
+          status: mediaFile.status,
+          createdAt: mediaFile.created_at,
+          updatedAt: mediaFile.updated_at,
         },
       });
     } catch (error) {
@@ -188,13 +256,48 @@ router.delete(
       const userId = req.auth?.userId;
       const { id } = req.params;
 
-      // TODO: Verify that the file belongs to the user
-      // TODO: Delete from R2 and database
+      // Verificar que el archivo pertenece al usuario
+      const mediaFile = await mediaService.getMediaFileById(id, userId!);
+
+      if (!mediaFile) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'File not found',
+            code: 'FILE_NOT_FOUND',
+          },
+        });
+      }
+
+      // Eliminar de R2 si está configurado
+      if (r2Service.isConfigured()) {
+        try {
+          await r2Service.deleteFile(mediaFile.storage_key);
+          console.log(`✅ File deleted from R2: ${mediaFile.storage_key}`);
+        } catch (error) {
+          console.error('⚠️ Error deleting from R2 (continuing anyway):', error);
+          // Continuar con el delete de la BD incluso si R2 falla
+        }
+      }
+
+      // Eliminar registro de base de datos
+      const deleted = await mediaService.deleteMediaFile(id, userId!);
+
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            message: 'File not found or already deleted',
+            code: 'FILE_NOT_FOUND',
+          },
+        });
+      }
 
       res.json({
         success: true,
         data: {
           message: 'File deleted successfully',
+          fileId: id,
         },
       });
     } catch (error) {

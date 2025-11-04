@@ -73,7 +73,8 @@ cp .env.example .env.local
 
 4. **Set up Database**
 - Go to Supabase SQL Editor
-- Run the schema from `backend/src/database/schema.sql`
+- Run the schema from `backend/src/db/schema.sql`
+- See `backend/src/db/README.md` for detailed instructions
 
 5. **Start Development Servers**
 
