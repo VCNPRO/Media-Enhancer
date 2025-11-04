@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
+import { body } from 'express-validator';
+import { validate } from '../middleware/validation.middleware';
+import { checkoutRateLimiter } from '../middleware/rateLimit.middleware';
 import Stripe from 'stripe';
 
 const router = Router();
@@ -53,42 +56,44 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Set user tier (temporal para testing)
-router.post('/set-tier', async (req: Request, res: Response) => {
-  try {
-    const userId = req.auth?.userId;
-    const { tier } = req.body;
+router.post(
+  '/set-tier',
+  validate([
+    body('tier')
+      .isIn(['starter', 'creator', 'professional'])
+      .withMessage('Invalid tier. Must be starter, creator, or professional'),
+  ]),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.auth?.userId;
+      const { tier } = req.body;
 
-    if (!userId) {
-      return res.status(401).json({
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized' },
+        });
+      }
+
+      // Guardar tier en memoria
+      userTiers.set(userId, tier);
+
+      res.json({
+        success: true,
+        data: {
+          tier: tier,
+          message: 'Tier actualizado exitosamente',
+        },
+      });
+    } catch (error) {
+      console.error('Set tier error:', error);
+      res.status(500).json({
         success: false,
-        error: { message: 'Unauthorized' },
+        error: { message: 'Failed to set tier' },
       });
     }
-
-    if (!['starter', 'creator', 'professional'].includes(tier)) {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'Invalid tier' },
-      });
-    }
-
-    // Guardar tier en memoria
-    userTiers.set(userId, tier);
-
-    res.json({
-      success: true,
-      data: {
-        tier: tier,
-        message: 'Tier actualizado exitosamente',
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: { message: 'Failed to set tier' },
-    });
   }
-});
+);
 
 // Get available plans
 router.get('/plans', async (req: Request, res: Response) => {
@@ -174,50 +179,61 @@ router.get('/current', async (req: Request, res: Response) => {
 });
 
 // Create checkout session
-router.post('/checkout', async (req: Request, res: Response) => {
-  try {
-    const userId = req.auth?.userId;
-    const { planId } = req.body;
+router.post(
+  '/checkout',
+  checkoutRateLimiter,
+  validate([
+    body('planId')
+      .notEmpty()
+      .withMessage('Plan ID is required')
+      .isString()
+      .withMessage('Plan ID must be a string'),
+  ]),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.auth?.userId;
+      const { planId } = req.body;
 
-    if (!planId) {
-      return res.status(400).json({
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: { message: 'Unauthorized' },
+        });
+      }
+
+      // TODO: Create Stripe checkout session
+      const stripe = getStripe();
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [
+          {
+            price: planId, // This should be a Stripe Price ID
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.FRONTEND_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.FRONTEND_URL}/pricing`,
+        metadata: {
+          userId,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          sessionId: session.id,
+          url: session.url,
+        },
+      });
+    } catch (error) {
+      console.error('Checkout error:', error);
+      res.status(500).json({
         success: false,
-        error: { message: 'Plan ID is required' },
+        error: { message: 'Failed to create checkout session' },
       });
     }
-
-    // TODO: Create Stripe checkout session
-    const stripe = getStripe();
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [
-        {
-          price: planId, // This should be a Stripe Price ID
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.FRONTEND_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/pricing`,
-      metadata: {
-        userId,
-      },
-    });
-
-    res.json({
-      success: true,
-      data: {
-        sessionId: session.id,
-        url: session.url,
-      },
-    });
-  } catch (error) {
-    console.error('Checkout error:', error);
-    res.status(500).json({
-      success: false,
-      error: { message: 'Failed to create checkout session' },
-    });
   }
-});
+);
 
 // Cancel subscription
 router.post('/cancel', async (req: Request, res: Response) => {

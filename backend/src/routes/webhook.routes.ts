@@ -18,19 +18,38 @@ router.post('/stripe', async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature'];
 
   if (!sig) {
+    console.error('Webhook Error: Missing Stripe signature');
     return res.status(400).json({
       success: false,
-      error: { message: 'Missing stripe signature' },
+      error: {
+        message: 'Missing stripe signature',
+        code: 'MISSING_SIGNATURE'
+      },
+    });
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('Webhook Error: STRIPE_WEBHOOK_SECRET not configured');
+    return res.status(500).json({
+      success: false,
+      error: {
+        message: 'Webhook secret not configured',
+        code: 'CONFIG_ERROR'
+      },
     });
   }
 
   try {
     const stripe = getStripe();
+
+    // Verify webhook signature
     const event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
+      process.env.STRIPE_WEBHOOK_SECRET
     );
+
+    console.log(`✓ Webhook verified: ${event.type} - ${event.id}`);
 
     // Handle different event types
     switch (event.type) {
@@ -75,11 +94,30 @@ router.post('/stripe', async (req: Request, res: Response) => {
     }
 
     res.json({ received: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Webhook error:', error);
-    res.status(400).json({
+
+    // Distinguir entre errores de verificación de firma y otros errores
+    if (error.type === 'StripeSignatureVerificationError') {
+      console.error('⚠ Invalid webhook signature');
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid signature',
+          code: 'INVALID_SIGNATURE',
+        },
+      });
+    }
+
+    // Log el error pero devolver 200 para evitar reintentos de Stripe
+    // si el problema es interno
+    console.error('Internal webhook processing error:', error.message);
+    res.status(500).json({
       success: false,
-      error: { message: 'Webhook error' },
+      error: {
+        message: 'Webhook processing failed',
+        code: 'PROCESSING_ERROR',
+      },
     });
   }
 });
