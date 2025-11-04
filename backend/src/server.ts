@@ -51,10 +51,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Clerk middleware
-app.use(clerkMiddleware());
-
-// Health check endpoint
+// Health check endpoint (ANTES de Clerk para que sea público)
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
@@ -63,6 +60,14 @@ app.get('/health', (req: Request, res: Response) => {
     environment: process.env.NODE_ENV,
   });
 });
+
+// Clerk middleware (solo si NO está deshabilitado)
+if (process.env.DISABLE_AUTH !== 'true') {
+  app.use(clerkMiddleware());
+  console.log('🔐 Clerk authentication enabled');
+} else {
+  console.warn('⚠️ WARNING: Authentication is DISABLED. This is only for testing!');
+}
 
 // API routes
 app.use('/api/auth', authRoutes);
