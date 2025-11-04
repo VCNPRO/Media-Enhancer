@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
 import { param, query, body } from 'express-validator';
-import { validate, isValidUUID, isValidMediaMimeType } from '../middleware/validation.middleware';
+import { validate, isValidMediaMimeType } from '../middleware/validation.middleware';
 import { uploadRateLimiter, aiProcessingRateLimiter } from '../middleware/rateLimit.middleware';
 import multer from 'multer';
 import r2Service from '../services/r2.service';
@@ -16,7 +16,7 @@ const upload = multer({
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     if (isValidMediaMimeType(file.mimetype)) {
       cb(null, true);
     } else {

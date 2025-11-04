@@ -8,17 +8,18 @@ export const handleValidationErrors = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: {
         message: 'Validation failed',
         details: errors.array(),
       },
     });
+    return;
   }
 
   next();
@@ -28,14 +29,14 @@ export const handleValidationErrors = (
  * Ejecuta un array de validaciones en secuencia
  */
 export const validate = (validations: ValidationChain[]) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Ejecutar todas las validaciones
     for (const validation of validations) {
-      const result = await validation.run(req);
+      await validation.run(req);
     }
 
     // Verificar si hay errores
-    return handleValidationErrors(req, res, next);
+    handleValidationErrors(req, res, next);
   };
 };
 

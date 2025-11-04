@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 /**
  * Rate limiter para endpoints de subida de archivos
@@ -19,7 +19,7 @@ export const uploadRateLimiter = rateLimit({
   legacyHeaders: false,
   // Usar userId como key en lugar de IP
   keyGenerator: (req: Request) => {
-    return req.auth?.userId || req.ip;
+    return req.auth?.userId || req.ip || 'anonymous';
   },
 });
 
@@ -59,7 +59,7 @@ export const aiProcessingRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
-    return req.auth?.userId || req.ip;
+    return req.auth?.userId || req.ip || 'anonymous';
   },
 });
 
@@ -80,7 +80,7 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
-    return req.auth?.userId || req.ip;
+    return req.auth?.userId || req.ip || 'anonymous';
   },
 });
 
@@ -101,6 +101,6 @@ export const checkoutRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
-    return req.auth?.userId || req.ip;
+    return req.auth?.userId || req.ip || 'anonymous';
   },
 });
