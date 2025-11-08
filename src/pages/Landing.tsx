@@ -15,13 +15,13 @@ export const Landing: React.FC = () => {
             </div>
             <div className="flex gap-4">
               <Link
-                to="/login"
+                to="/demo-setup"
                 className="px-4 py-2 text-gray-300 hover:text-white transition"
               >
                 Iniciar Sesión
               </Link>
               <Link
-                to="/register"
+                to="/demo-setup"
                 className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
               >
                 Empezar Gratis
@@ -47,17 +47,17 @@ export const Landing: React.FC = () => {
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <Link
-              to="/register"
+              to="/demo-setup"
               className="px-8 py-4 bg-red-600 hover:bg-red-700 rounded-lg font-bold text-lg transition shadow-lg shadow-red-500/50"
             >
               Empezar Ahora
             </Link>
-            <Link
-              to="#features"
+            <a
+              href="#features"
               className="px-8 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg font-bold text-lg transition"
             >
               Ver Funciones
-            </Link>
+            </a>
           </div>
         </div>
 

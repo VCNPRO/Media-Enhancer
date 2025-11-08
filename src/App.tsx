@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Test } from './Test';
 import { Landing } from './pages/Landing';
 import { DashboardBasic } from './pages/DashboardBasic';
 import { DashboardPro } from './pages/DashboardPro';
@@ -134,6 +135,9 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Página de prueba */}
+          <Route path="/test" element={<Test />} />
+
           {/* Página pública */}
           <Route path="/" element={<Landing />} />
 
