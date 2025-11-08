@@ -416,17 +416,39 @@ export const EditorBasic: React.FC = () => {
           )}
 
           {loading && (
-            <div className="mb-8 p-4 bg-blue-900/50 border border-blue-500 rounded-lg text-center">
-              <p className="mb-2">⏳ Cargando FFmpeg.wasm...</p>
-              <div className="flex justify-center">
+            <div className="mb-8 p-6 bg-blue-900/50 border border-blue-500 rounded-lg">
+              <div className="flex items-center justify-center gap-3 mb-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="text-left">
+                  <p className="font-semibold">⏳ Cargando FFmpeg.wasm...</p>
+                  <p className="text-sm text-blue-200">Esto puede tardar 30-60 segundos</p>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-blue-200 space-y-1">
+                <p>• Descargando procesador de video (~30MB)</p>
+                <p>• El sistema reintentará automáticamente si hay problemas</p>
+                <p>• Por favor, mantén esta ventana abierta</p>
               </div>
             </div>
           )}
 
           {ffmpegError && (
-            <div className="mb-8 p-4 bg-red-900/50 border border-red-500 rounded-lg">
-              <p className="text-red-200">❌ Error al cargar el editor: {ffmpegError}</p>
+            <div className="mb-8 p-6 bg-red-900/50 border border-red-500 rounded-lg">
+              <div className="flex items-start gap-3 mb-4">
+                <span className="text-3xl">❌</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl mb-2">Error al cargar el editor</h3>
+                  <p className="text-red-200 whitespace-pre-line">{ffmpegError}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
+              >
+                🔄 Recargar Página
+              </button>
             </div>
           )}
 

@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 5173,
         host: '0.0.0.0',
+        // Headers necesarios para SharedArrayBuffer (requerido por FFmpeg.wasm)
+        headers: {
+          'Cross-Origin-Opener-Policy': 'same-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Cross-Origin-Resource-Policy': 'cross-origin',
+        },
       },
       plugins: [react()],
       define: {

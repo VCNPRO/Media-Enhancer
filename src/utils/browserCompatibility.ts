@@ -100,6 +100,50 @@ export const getBrowserRecommendations = (compatibility: BrowserCompatibility): 
 };
 
 /**
+ * Verifica si los headers COOP/COEP están configurados correctamente
+ */
+export const checkCOOPCOEPHeaders = async (): Promise<{
+  configured: boolean;
+  coopHeader: string | null;
+  coepHeader: string | null;
+  message: string;
+}> => {
+  try {
+    // Intentar verificar si SharedArrayBuffer está disponible
+    const hasSAB = typeof SharedArrayBuffer !== 'undefined';
+
+    if (!hasSAB) {
+      return {
+        configured: false,
+        coopHeader: null,
+        coepHeader: null,
+        message:
+          'SharedArrayBuffer no está disponible.\n\n' +
+          'Tu sitio necesita estos headers HTTP:\n' +
+          '• Cross-Origin-Opener-Policy: same-origin\n' +
+          '• Cross-Origin-Embedder-Policy: require-corp\n\n' +
+          'Vercel configura esto automáticamente con vercel.json.\n' +
+          'En desarrollo local, usa: vite --host',
+      };
+    }
+
+    return {
+      configured: true,
+      coopHeader: 'same-origin',
+      coepHeader: 'require-corp',
+      message: 'Headers COOP/COEP configurados correctamente ✓',
+    };
+  } catch (err) {
+    return {
+      configured: false,
+      coopHeader: null,
+      coepHeader: null,
+      message: `Error verificando headers: ${err}`,
+    };
+  }
+};
+
+/**
  * Muestra información de depuración sobre el navegador
  */
 export const getBrowserDebugInfo = (): Record<string, any> => {
@@ -115,5 +159,6 @@ export const getBrowserDebugInfo = (): Record<string, any> => {
     hasServiceWorker: 'serviceWorker' in navigator,
     screenResolution: `${window.screen.width}x${window.screen.height}`,
     viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+    crossOriginIsolated: window.crossOriginIsolated || false,
   };
 };
