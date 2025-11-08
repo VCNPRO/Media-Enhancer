@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FileUploader, VideoMetadata } from '../components/FileUploader';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { Timeline } from '../components/Timeline';
+import { useModal } from '../components/Modal';
 import { useFFmpeg, ffmpegUtils } from '../hooks/useFFmpeg';
 import { formatBytes, formatDuration } from '../config/plans';
+import { checkBrowserCompatibility, getBrowserRecommendations } from '../utils/browserCompatibility';
 
 type EditorTab = 'trim' | 'volume' | 'rotate' | 'vhs';
 
@@ -16,12 +18,14 @@ interface VideoState {
 
 export const EditorBasic: React.FC = () => {
   const navigate = useNavigate();
-  const { loaded, loading, error: ffmpegError, load, executeCommand, writeFile, readFile } = useFFmpeg();
+  const { loaded, loading, error: ffmpegError, progress: ffmpegProgress, load, executeCommand, writeFile, readFile, deleteFile } = useFFmpeg();
+  const { showAlert, showConfirm, ModalComponent } = useModal();
 
   const [video, setVideo] = useState<VideoState | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>('trim');
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [processingStage, setProcessingStage] = useState<string>('');
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string | null>(null);
 
   // Trim state
@@ -44,12 +48,40 @@ export const EditorBasic: React.FC = () => {
     enhanceColors: false,
   });
 
+  // Check browser compatibility on mount
+  useEffect(() => {
+    const compatibility = checkBrowserCompatibility();
+
+    if (!compatibility.isSupported) {
+      const recommendations = getBrowserRecommendations(compatibility);
+      const message =
+        `Tu navegador (${compatibility.browser}) no es totalmente compatible con esta aplicación.\n\n` +
+        `Problemas detectados:\n${compatibility.issues.map(i => `• ${i}`).join('\n')}\n\n` +
+        `Recomendaciones:\n${recommendations.map(r => `• ${r}`).join('\n')}`;
+
+      showAlert('Navegador No Compatible', message, 'warning');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
+
   // Load FFmpeg when component mounts
   useEffect(() => {
     if (!loaded && !loading) {
       load();
     }
   }, [loaded, loading, load]);
+
+  // Sync FFmpeg progress with local state
+  useEffect(() => {
+    if (ffmpegProgress && processing) {
+      // FFmpeg progress ratio is between 0 and 1
+      const progressPercent = Math.round(ffmpegProgress.ratio * 100);
+      // Durante el procesamiento FFmpeg, mostrar entre 20% y 90%
+      // dejando 10% para lectura y preparación final
+      const adjustedProgress = 20 + (progressPercent * 0.7);
+      setProgress(Math.min(90, adjustedProgress));
+    }
+  }, [ffmpegProgress, processing]);
 
   const handleFileSelected = (file: File, metadata: VideoMetadata) => {
     const url = URL.createObjectURL(file);
@@ -61,31 +93,35 @@ export const EditorBasic: React.FC = () => {
 
     // Show warning if file is large
     if (metadata.shouldUseServerProcessing) {
-      alert(
-        `⚠️ Este video es grande (${formatBytes(metadata.size)}). ` +
+      showAlert(
+        'Video Grande Detectado',
+        `Este video es grande (${formatBytes(metadata.size)}). ` +
           `El procesamiento puede tardar varios minutos en el navegador.\n\n` +
-          `Para videos muy grandes, considera usar el procesamiento en servidor (próximamente).`
+          `Para videos muy grandes, considera usar el procesamiento en servidor (próximamente).`,
+        'warning'
       );
     }
 
     // Auto-detect VHS and suggest enhancements
     if (metadata.isVHS) {
-      const confirmVHS = window.confirm(
-        `📼 Hemos detectado que este es un video VHS (720x576 PAL).\n\n` +
+      showConfirm(
+        'Video VHS Detectado',
+        `Hemos detectado que este es un video VHS (720x576 PAL).\n\n` +
           `¿Quieres aplicar automáticamente mejoras para VHS?\n` +
-          `- Reducción de ruido\n` +
-          `- Recorte de bordes negros\n` +
-          `- Mejora de colores`
+          `• Reducción de ruido\n` +
+          `• Recorte de bordes negros\n` +
+          `• Mejora de colores`,
+        () => {
+          setActiveTab('vhs');
+          setVhsEnhancement({
+            reduceNoise: true,
+            cropBlackBars: true,
+            enhanceColors: true,
+          });
+        },
+        'Sí, aplicar mejoras',
+        'No, gracias'
       );
-
-      if (confirmVHS) {
-        setActiveTab('vhs');
-        setVhsEnhancement({
-          reduceNoise: true,
-          cropBlackBars: true,
-          enhanceColors: true,
-        });
-      }
     }
   };
 
@@ -99,11 +135,13 @@ export const EditorBasic: React.FC = () => {
 
     setProcessing(true);
     setProgress(0);
+    setProcessingStage('Preparando archivo...');
 
     try {
       // Write input file to FFmpeg
       await writeFile('input.mp4', video.file);
-      setProgress(20);
+      setProgress(10);
+      setProcessingStage('Cortando video...');
 
       // Trim command (usando -c copy para no recodificar = más rápido)
       const command = [
@@ -119,7 +157,8 @@ export const EditorBasic: React.FC = () => {
       ];
 
       await executeCommand(command);
-      setProgress(80);
+      setProgress(90);
+      setProcessingStage('Finalizando...');
 
       // Read output
       const data = await readFile('output.mp4');
@@ -128,12 +167,21 @@ export const EditorBasic: React.FC = () => {
 
       setProcessedVideoUrl(url);
       setProgress(100);
+      setProcessingStage('¡Completado!');
     } catch (err) {
       console.error('Error trimming video:', err);
-      alert('Error al cortar el video. Por favor, intenta de nuevo.');
+      showAlert('Error de Procesamiento', 'Error al cortar el video. Por favor, intenta de nuevo.', 'error');
     } finally {
+      // Limpiar archivos temporales de FFmpeg para liberar memoria
+      try {
+        await deleteFile('input.mp4');
+        await deleteFile('output.mp4');
+      } catch (cleanupErr) {
+        console.warn('Error cleaning up temporary files:', cleanupErr);
+      }
       setProcessing(false);
       setProgress(0);
+      setProcessingStage('');
     }
   };
 
@@ -169,8 +217,15 @@ export const EditorBasic: React.FC = () => {
       setProgress(100);
     } catch (err) {
       console.error('Error adjusting volume:', err);
-      alert('Error al ajustar el volumen. Por favor, intenta de nuevo.');
+      showAlert('Error de Procesamiento', 'Error al ajustar el volumen. Por favor, intenta de nuevo.', 'error');
     } finally {
+      // Limpiar archivos temporales de FFmpeg para liberar memoria
+      try {
+        await deleteFile('input.mp4');
+        await deleteFile('output.mp4');
+      } catch (cleanupErr) {
+        console.warn('Error cleaning up temporary files:', cleanupErr);
+      }
       setProcessing(false);
       setProgress(0);
     }
@@ -220,8 +275,15 @@ export const EditorBasic: React.FC = () => {
       setProgress(100);
     } catch (err) {
       console.error('Error rotating video:', err);
-      alert('Error al rotar el video. Por favor, intenta de nuevo.');
+      showAlert('Error de Procesamiento', 'Error al rotar el video. Por favor, intenta de nuevo.', 'error');
     } finally {
+      // Limpiar archivos temporales de FFmpeg para liberar memoria
+      try {
+        await deleteFile('input.mp4');
+        await deleteFile('output.mp4');
+      } catch (cleanupErr) {
+        console.warn('Error cleaning up temporary files:', cleanupErr);
+      }
       setProcessing(false);
       setProgress(0);
     }
@@ -245,8 +307,11 @@ export const EditorBasic: React.FC = () => {
       }
 
       // Crop black bars (typical VHS has black bars)
+      // VHS PAL típicamente tiene bordes negros en top/bottom
       if (vhsEnhancement.cropBlackBars) {
-        filters.push('cropdetect=24:16:0'); // Auto-detect and crop
+        // Para VHS 720x576, usualmente hay ~18px de bordes arriba/abajo
+        // crop=width:height:x:y donde x,y es la esquina superior izquierda
+        filters.push('crop=720:540:0:18'); // Crop to 720x540, removing ~18px from top and bottom
       }
 
       // Color enhancement
@@ -274,8 +339,15 @@ export const EditorBasic: React.FC = () => {
       setProgress(100);
     } catch (err) {
       console.error('Error enhancing VHS:', err);
-      alert('Error al mejorar el video VHS. Por favor, intenta de nuevo.');
+      showAlert('Error de Procesamiento', 'Error al mejorar el video VHS. Por favor, intenta de nuevo.', 'error');
     } finally {
+      // Limpiar archivos temporales de FFmpeg para liberar memoria
+      try {
+        await deleteFile('input.mp4');
+        await deleteFile('output.mp4');
+      } catch (cleanupErr) {
+        console.warn('Error cleaning up temporary files:', cleanupErr);
+      }
       setProcessing(false);
       setProgress(0);
     }
@@ -410,17 +482,25 @@ export const EditorBasic: React.FC = () => {
 
           {/* Processing Progress */}
           {processing && (
-            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold">Procesando...</span>
-                <span className="text-sm text-gray-400">{progress}%</span>
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                  <span className="font-semibold">{processingStage || 'Procesando...'}</span>
+                </div>
+                <span className="text-sm text-gray-400 font-mono">{progress}%</span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-red-500 to-pink-500 h-3 rounded-full transition-all duration-300 shadow-lg"
                   style={{ width: `${progress}%` }}
                 />
               </div>
+              {ffmpegProgress && ffmpegProgress.time > 0 && (
+                <div className="mt-2 text-xs text-gray-400">
+                  Tiempo procesado: {Math.floor(ffmpegProgress.time)}s
+                </div>
+              )}
             </div>
           )}
 
@@ -709,6 +789,9 @@ export const EditorBasic: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Component */}
+      <ModalComponent />
 
       <style>{`
         .slider::-webkit-slider-thumb {
