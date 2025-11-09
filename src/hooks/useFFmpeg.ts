@@ -42,12 +42,12 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       console.log('🔄 Iniciando carga de FFmpeg.wasm...');
 
-      // Timeout para evitar bucles infinitos (60 segundos)
+      // Timeout para evitar bucles infinitos (30 segundos)
       loadTimeout = setTimeout(() => {
-        setError('Tiempo de carga agotado. Por favor, recarga la página e intenta de nuevo.');
+        setError('Tiempo de carga agotado. Verifica que tu navegador soporte SharedArrayBuffer (Chrome/Edge actualizados).');
         setLoading(false);
-        console.error('❌ Timeout: Carga de FFmpeg excedió 60 segundos');
-      }, 60000);
+        console.error('❌ Timeout: Carga de FFmpeg excedió 30 segundos');
+      }, 30000);
 
       const ffmpeg = new FFmpeg();
 
@@ -72,10 +72,14 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       console.log('✅ ffmpeg-core.wasm descargado');
 
+      const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript');
+      console.log('✅ ffmpeg-core.worker.js descargado');
+
       console.log('⚙️ Cargando FFmpeg...');
       await ffmpeg.load({
         coreURL,
         wasmURL,
+        workerURL,
       });
 
       // Limpiar timeout si la carga fue exitosa

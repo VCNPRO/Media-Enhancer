@@ -351,7 +351,7 @@ export const EditorBasic: React.FC = () => {
               <p className="text-sm text-gray-300 mb-3">
                 Esto puede tardar 10-30 segundos dependiendo de tu conexión.
                 <br />
-                Si tarda más de 60 segundos, se cancelará automáticamente.
+                Se cancelará automáticamente después de 30 segundos si no carga.
               </p>
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
