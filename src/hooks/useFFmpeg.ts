@@ -28,7 +28,13 @@ export const useFFmpeg = (): UseFFmpegReturn => {
   const [progress, setProgress] = useState<FFmpegProgress | null>(null);
 
   const load = useCallback(async () => {
-    if (loaded || loading) return;
+    if (loaded || loading) {
+      console.log('⚠️ FFmpeg ya está cargado o cargándose, saltando...');
+      return;
+    }
+
+    // Variable para el timeout debe estar fuera del try
+    let loadTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
       setLoading(true);
@@ -37,9 +43,10 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       console.log('🔄 Iniciando carga de FFmpeg.wasm...');
 
       // Timeout para evitar bucles infinitos (60 segundos)
-      const loadTimeout = setTimeout(() => {
+      loadTimeout = setTimeout(() => {
         setError('Tiempo de carga agotado. Por favor, recarga la página e intenta de nuevo.');
         setLoading(false);
+        console.error('❌ Timeout: Carga de FFmpeg excedió 60 segundos');
       }, 60000);
 
       const ffmpeg = new FFmpeg();
@@ -72,14 +79,16 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       });
 
       // Limpiar timeout si la carga fue exitosa
-      clearTimeout(loadTimeout);
+      if (loadTimeout) clearTimeout(loadTimeout);
 
       ffmpegRef.current = ffmpeg;
       setLoaded(true);
       console.log('✅ FFmpeg.wasm loaded successfully');
     } catch (err) {
       // Limpiar timeout en caso de error
-      clearTimeout(loadTimeout);
+      if (loadTimeout) clearTimeout(loadTimeout);
+
+      console.error('❌ Error capturado en load():', err);
       let errorMessage = 'Failed to load FFmpeg';
 
       if (err instanceof Error) {
