@@ -66,12 +66,11 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         console.error('[FFmpeg Error]:', error);
       });
 
-      // Cargar FFmpeg desde CDN (versión single-threaded - más compatible)
-      // Esta versión NO requiere SharedArrayBuffer ni headers CORS especiales
-      // Usando jsDelivr en lugar de unpkg por mejor soporte CORS
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm';
+      // Cargar FFmpeg desde CDN (versión multi-threaded)
+      // Usando jsDelivr CDN con ruta UMD correcta
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
 
-      console.log('📥 Descargando FFmpeg.wasm (single-threaded) desde CDN...');
+      console.log('📥 Descargando FFmpeg.wasm desde jsDelivr CDN...');
 
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       console.log('✅ ffmpeg-core.js descargado');
@@ -79,7 +78,7 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       console.log('✅ ffmpeg-core.wasm descargado');
 
-      console.log('⚙️ Cargando FFmpeg (single-threaded)...');
+      console.log('⚙️ Cargando FFmpeg...');
       console.log('📦 Iniciando ffmpeg.load() con:', { coreURL: 'blob URL', wasmURL: 'blob URL' });
 
       await ffmpeg.load({
