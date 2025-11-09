@@ -40,26 +40,27 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       setError(null);
 
       console.log('🔄 Iniciando carga de FFmpeg.wasm...');
-      console.log('📦 Versión: @ffmpeg/ffmpeg@0.11.6 + @ffmpeg/core-st@0.11.1');
+      console.log('📦 Versión: @ffmpeg/ffmpeg@0.10.1 + @ffmpeg/core@0.10.0');
 
-      // Timeout para evitar bucles infinitos (60 segundos para v0.11)
+      // Timeout para evitar bucles infinitos (60 segundos)
       loadTimeout = setTimeout(() => {
         setError('Tiempo de carga agotado. Intenta recargar la página.');
         setLoading(false);
         console.error('❌ Timeout: Carga de FFmpeg excedió 60 segundos');
       }, 60000);
 
-      // API v0.11: createFFmpeg en lugar de new FFmpeg()
+      // API v0.10: createFFmpeg con corePath y workerPath
       const ffmpeg = createFFmpeg({
         log: true,
         corePath: '/ffmpeg/ffmpeg-core.js',
+        workerPath: '/ffmpeg/ffmpeg-core.worker.js',
         progress: ({ ratio }) => {
           setProgress({ ratio, time: 0 });
           console.log(`📊 Progreso: ${Math.round(ratio * 100)}%`);
         },
       });
 
-      console.log('⚙️ Iniciando FFmpeg (single-threaded v0.11)...');
+      console.log('⚙️ Iniciando FFmpeg v0.10 (multi-threaded)...');
 
       await ffmpeg.load();
 
