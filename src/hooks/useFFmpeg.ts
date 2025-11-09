@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { toBlobURL, fetchFile } from '@ffmpeg/util';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 interface FFmpegProgress {
   ratio: number;
@@ -21,7 +20,7 @@ interface UseFFmpegReturn {
 }
 
 export const useFFmpeg = (): UseFFmpegReturn => {
-  const ffmpegRef = useRef<FFmpeg | null>(null);
+  const ffmpegRef = useRef<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,50 +40,28 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       setError(null);
 
       console.log('🔄 Iniciando carga de FFmpeg.wasm...');
-
-      // Timeout para evitar bucles infinitos (30 segundos)
-      loadTimeout = setTimeout(() => {
-        setError('Tiempo de carga agotado. Verifica que tu navegador soporte SharedArrayBuffer (Chrome/Edge actualizados).');
-        setLoading(false);
-        console.error('❌ Timeout: Carga de FFmpeg excedió 30 segundos');
-      }, 30000);
-
-      const ffmpeg = new FFmpeg();
-
-      // Configurar listeners
-      ffmpeg.on('log', ({ message }) => {
-        console.log('[FFmpeg Log]:', message);
-      });
-
-      ffmpeg.on('progress', ({ progress, time }) => {
-        setProgress({ ratio: progress, time });
-        console.log(`📊 Progreso: ${Math.round(progress * 100)}%`);
-      });
-
-      // Listener de errores
-      ffmpeg.on('error', (error) => {
-        console.error('[FFmpeg Error]:', error);
-      });
-
-      // Cargar FFmpeg desde archivos locales
-      // Versión 0.11.x tiene mejor compatibilidad con single-threaded
-      const baseURL = '/ffmpeg';
-
-      console.log('📥 Cargando FFmpeg.wasm desde archivos locales...');
       console.log('📦 Versión: @ffmpeg/ffmpeg@0.11.6 + @ffmpeg/core-st@0.11.1');
 
-      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-      console.log('✅ ffmpeg-core.js cargado');
+      // Timeout para evitar bucles infinitos (60 segundos para v0.11)
+      loadTimeout = setTimeout(() => {
+        setError('Tiempo de carga agotado. Intenta recargar la página.');
+        setLoading(false);
+        console.error('❌ Timeout: Carga de FFmpeg excedió 60 segundos');
+      }, 60000);
 
-      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-      console.log('✅ ffmpeg-core.wasm cargado');
-
-      console.log('⚙️ Iniciando FFmpeg (single-threaded)...');
-
-      await ffmpeg.load({
-        coreURL,
-        wasmURL,
+      // API v0.11: createFFmpeg en lugar de new FFmpeg()
+      const ffmpeg = createFFmpeg({
+        log: true,
+        corePath: '/ffmpeg/ffmpeg-core.js',
+        progress: ({ ratio }) => {
+          setProgress({ ratio, time: 0 });
+          console.log(`📊 Progreso: ${Math.round(ratio * 100)}%`);
+        },
       });
+
+      console.log('⚙️ Iniciando FFmpeg (single-threaded v0.11)...');
+
+      await ffmpeg.load();
 
       console.log('✅ ffmpeg.load() completado exitosamente');
 
@@ -129,7 +106,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       try {
         setProgress(null);
-        await ffmpegRef.current.exec(command);
+        // API v0.11: usa run() en lugar de exec()
+        await ffmpegRef.current.run(...command);
         return null;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'FFmpeg command failed';
@@ -159,7 +137,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
           fileData = await fetchFile(data);
         }
 
-        await ffmpegRef.current.writeFile(name, fileData);
+        // API v0.11: usa FS('writeFile')
+        ffmpegRef.current.FS('writeFile', name, fileData);
       } catch (err) {
         console.error('Error writing file:', err);
         throw err;
@@ -175,7 +154,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       }
 
       try {
-        const data = await ffmpegRef.current.readFile(name);
+        // API v0.11: usa FS('readFile')
+        const data = ffmpegRef.current.FS('readFile', name);
         return data as Uint8Array;
       } catch (err) {
         console.error('Error reading file:', err);
@@ -192,7 +172,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       }
 
       try {
-        await ffmpegRef.current.deleteFile(name);
+        // API v0.11: usa FS('unlink')
+        ffmpegRef.current.FS('unlink', name);
       } catch (err) {
         // Ignorar errores si el archivo no existe
         console.warn('Error deleting file:', err);
