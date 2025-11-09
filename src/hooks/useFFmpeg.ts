@@ -68,7 +68,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       // Cargar FFmpeg desde CDN (versión single-threaded - más compatible)
       // Esta versión NO requiere SharedArrayBuffer ni headers CORS especiales
-      const baseURL = 'https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/esm';
+      // Usando jsDelivr en lugar de unpkg por mejor soporte CORS
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm';
 
       console.log('📥 Descargando FFmpeg.wasm (single-threaded) desde CDN...');
 
