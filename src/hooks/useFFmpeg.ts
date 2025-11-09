@@ -66,20 +66,20 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         console.error('[FFmpeg Error]:', error);
       });
 
-      // Cargar FFmpeg desde CDN (versión multi-threaded)
-      // Usando jsDelivr CDN con ruta UMD correcta
-      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+      // Cargar FFmpeg desde archivos locales (servidos por Vercel con headers CORS correctos)
+      // Los archivos están en public/ffmpeg/ y se sirven directamente desde nuestro dominio
+      const baseURL = '/ffmpeg';
 
-      console.log('📥 Descargando FFmpeg.wasm desde jsDelivr CDN...');
+      console.log('📥 Cargando FFmpeg.wasm desde archivos locales...');
 
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-      console.log('✅ ffmpeg-core.js descargado');
+      console.log('✅ ffmpeg-core.js cargado');
 
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-      console.log('✅ ffmpeg-core.wasm descargado');
+      console.log('✅ ffmpeg-core.wasm cargado');
 
-      console.log('⚙️ Cargando FFmpeg...');
-      console.log('📦 Iniciando ffmpeg.load() con:', { coreURL: 'blob URL', wasmURL: 'blob URL' });
+      console.log('⚙️ Iniciando FFmpeg...');
+      console.log('📦 Configuración:', { coreURL: 'local blob', wasmURL: 'local blob' });
 
       await ffmpeg.load({
         coreURL,
