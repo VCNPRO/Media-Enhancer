@@ -77,9 +77,6 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       console.log('✅ ffmpeg-core.wasm descargado');
 
-      const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript');
-      console.log('✅ ffmpeg-core.worker.js descargado');
-
       console.log('⚙️ Cargando FFmpeg...');
       console.log('🔍 Verificando SharedArrayBuffer...');
 
@@ -88,12 +85,11 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       }
 
       console.log('✅ SharedArrayBuffer está disponible');
-      console.log('📦 Iniciando ffmpeg.load() con:', { coreURL: 'blob URL', wasmURL: 'blob URL', workerURL: 'blob URL' });
+      console.log('📦 Iniciando ffmpeg.load() con:', { coreURL: 'blob URL', wasmURL: 'blob URL' });
 
       await ffmpeg.load({
         coreURL,
         wasmURL,
-        workerURL,
       });
 
       console.log('✅ ffmpeg.load() completado exitosamente');
