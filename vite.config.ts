@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
         port: 5173,
         host: '0.0.0.0',
         headers: {
-          'Cross-Origin-Embedder-Policy': 'require-corp',
+          'Cross-Origin-Embedder-Policy': 'credentialless',
           'Cross-Origin-Opener-Policy': 'same-origin',
         },
       },
