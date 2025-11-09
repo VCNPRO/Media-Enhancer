@@ -44,12 +44,9 @@ export const EditorBasic: React.FC = () => {
     enhanceColors: false,
   });
 
-  // Load FFmpeg when component mounts
-  useEffect(() => {
-    if (!loaded && !loading) {
-      load();
-    }
-  }, [loaded, loading, load]);
+  // No cargar automáticamente - el usuario debe hacer clic en el botón
+  // Esto evita bucles infinitos si hay problemas de CORS o SharedArrayBuffer
+  // useEffect removido intencionalmente para carga manual
 
   const handleFileSelected = (file: File, metadata: VideoMetadata) => {
     const url = URL.createObjectURL(file);
@@ -331,21 +328,31 @@ export const EditorBasic: React.FC = () => {
             </p>
           </div>
 
-          {!loaded && !loading && (
+          {!loaded && !loading && !ffmpegError && (
             <div className="mb-8 p-4 bg-blue-900/50 border border-blue-500 rounded-lg text-center">
-              <p className="mb-2">⚙️ Preparando el editor...</p>
+              <p className="mb-2 font-semibold">⚙️ Editor de Video Listo</p>
+              <p className="text-sm text-gray-300 mb-4">
+                Haz clic en el botón para cargar las herramientas de edición.
+                <br />
+                (Se descargará FFmpeg.wasm ~32MB - puede tardar 10-30 segundos)
+              </p>
               <button
                 onClick={load}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition shadow-lg"
               >
-                Cargar Editor
+                🚀 Cargar Editor
               </button>
             </div>
           )}
 
           {loading && (
             <div className="mb-8 p-4 bg-blue-900/50 border border-blue-500 rounded-lg text-center">
-              <p className="mb-2">⏳ Cargando FFmpeg.wasm...</p>
+              <p className="mb-2 font-semibold">⏳ Cargando FFmpeg.wasm...</p>
+              <p className="text-sm text-gray-300 mb-3">
+                Esto puede tardar 10-30 segundos dependiendo de tu conexión.
+                <br />
+                Si tarda más de 60 segundos, se cancelará automáticamente.
+              </p>
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
               </div>
@@ -354,7 +361,13 @@ export const EditorBasic: React.FC = () => {
 
           {ffmpegError && (
             <div className="mb-8 p-4 bg-red-900/50 border border-red-500 rounded-lg">
-              <p className="text-red-200">❌ Error al cargar el editor: {ffmpegError}</p>
+              <p className="text-red-200 mb-3">❌ Error al cargar el editor: {ffmpegError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
+              >
+                🔄 Recargar Página
+              </button>
             </div>
           )}
 

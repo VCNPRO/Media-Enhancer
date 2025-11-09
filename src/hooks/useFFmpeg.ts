@@ -36,6 +36,12 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       console.log('🔄 Iniciando carga de FFmpeg.wasm...');
 
+      // Timeout para evitar bucles infinitos (60 segundos)
+      const loadTimeout = setTimeout(() => {
+        setError('Tiempo de carga agotado. Por favor, recarga la página e intenta de nuevo.');
+        setLoading(false);
+      }, 60000);
+
       const ffmpeg = new FFmpeg();
 
       // Configurar listeners
@@ -65,10 +71,15 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         wasmURL,
       });
 
+      // Limpiar timeout si la carga fue exitosa
+      clearTimeout(loadTimeout);
+
       ffmpegRef.current = ffmpeg;
       setLoaded(true);
       console.log('✅ FFmpeg.wasm loaded successfully');
     } catch (err) {
+      // Limpiar timeout en caso de error
+      clearTimeout(loadTimeout);
       let errorMessage = 'Failed to load FFmpeg';
 
       if (err instanceof Error) {
