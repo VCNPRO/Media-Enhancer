@@ -66,11 +66,12 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         console.error('[FFmpeg Error]:', error);
       });
 
-      // Cargar FFmpeg desde archivos locales (servidos por Vercel con headers CORS correctos)
-      // Los archivos están en public/ffmpeg/ y se sirven directamente desde nuestro dominio
+      // Cargar FFmpeg desde archivos locales
+      // Versión 0.11.x tiene mejor compatibilidad con single-threaded
       const baseURL = '/ffmpeg';
 
       console.log('📥 Cargando FFmpeg.wasm desde archivos locales...');
+      console.log('📦 Versión: @ffmpeg/ffmpeg@0.11.6 + @ffmpeg/core-st@0.11.1');
 
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       console.log('✅ ffmpeg-core.js cargado');
@@ -78,8 +79,7 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
       console.log('✅ ffmpeg-core.wasm cargado');
 
-      console.log('⚙️ Iniciando FFmpeg...');
-      console.log('📦 Configuración:', { coreURL: 'local blob', wasmURL: 'local blob' });
+      console.log('⚙️ Iniciando FFmpeg (single-threaded)...');
 
       await ffmpeg.load({
         coreURL,
