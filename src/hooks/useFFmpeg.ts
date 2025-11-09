@@ -34,6 +34,8 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       setLoading(true);
       setError(null);
 
+      console.log('🔄 Iniciando carga de FFmpeg.wasm...');
+
       const ffmpeg = new FFmpeg();
 
       // Configurar listeners
@@ -43,21 +45,45 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       ffmpeg.on('progress', ({ progress, time }) => {
         setProgress({ ratio: progress, time });
+        console.log(`📊 Progreso: ${Math.round(progress * 100)}%`);
       });
 
       // Cargar FFmpeg desde CDN
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
+      console.log('📥 Descargando FFmpeg.wasm desde CDN...');
+
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      console.log('✅ ffmpeg-core.js descargado');
+
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+      console.log('✅ ffmpeg-core.wasm descargado');
+
+      console.log('⚙️ Cargando FFmpeg...');
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        coreURL,
+        wasmURL,
       });
 
       ffmpegRef.current = ffmpeg;
       setLoaded(true);
       console.log('✅ FFmpeg.wasm loaded successfully');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load FFmpeg';
+      let errorMessage = 'Failed to load FFmpeg';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+
+        // Mensajes de error más amigables
+        if (err.message.includes('SharedArrayBuffer')) {
+          errorMessage = 'Tu navegador no soporta SharedArrayBuffer. Prueba con Chrome o Edge actualizado.';
+        } else if (err.message.includes('CORS')) {
+          errorMessage = 'Error de CORS. Recarga la página (Ctrl+F5).';
+        } else if (err.message.includes('network')) {
+          errorMessage = 'Error de red. Verifica tu conexión a internet.';
+        }
+      }
+
       setError(errorMessage);
       console.error('❌ Error loading FFmpeg:', err);
     } finally {
