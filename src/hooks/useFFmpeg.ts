@@ -53,7 +53,7 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       // Configurar listeners
       ffmpeg.on('log', ({ message }) => {
-        console.log('[FFmpeg]:', message);
+        console.log('[FFmpeg Log]:', message);
       });
 
       ffmpeg.on('progress', ({ progress, time }) => {
@@ -61,8 +61,13 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         console.log(`📊 Progreso: ${Math.round(progress * 100)}%`);
       });
 
-      // Cargar FFmpeg desde CDN
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      // Listener de errores
+      ffmpeg.on('error', (error) => {
+        console.error('[FFmpeg Error]:', error);
+      });
+
+      // Cargar FFmpeg desde CDN (usando 0.12.10 compatible con ffmpeg 0.12.15)
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
 
       console.log('📥 Descargando FFmpeg.wasm desde CDN...');
 
@@ -76,11 +81,22 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       console.log('✅ ffmpeg-core.worker.js descargado');
 
       console.log('⚙️ Cargando FFmpeg...');
+      console.log('🔍 Verificando SharedArrayBuffer...');
+
+      if (typeof SharedArrayBuffer === 'undefined') {
+        throw new Error('SharedArrayBuffer no está disponible. Tu navegador puede no soportarlo o los headers CORS no están configurados correctamente.');
+      }
+
+      console.log('✅ SharedArrayBuffer está disponible');
+      console.log('📦 Iniciando ffmpeg.load() con:', { coreURL: 'blob URL', wasmURL: 'blob URL', workerURL: 'blob URL' });
+
       await ffmpeg.load({
         coreURL,
         wasmURL,
         workerURL,
       });
+
+      console.log('✅ ffmpeg.load() completado exitosamente');
 
       // Limpiar timeout si la carga fue exitosa
       if (loadTimeout) clearTimeout(loadTimeout);
