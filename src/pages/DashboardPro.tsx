@@ -184,6 +184,13 @@ export const DashboardPro: React.FC = () => {
                   <span>+</span>
                   Nuevo Proyecto
                 </Link>
+                <Link
+                  to="/cloud-upload"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition flex items-center gap-2"
+                >
+                  <span>☁️</span>
+                  Subir a Nube
+                </Link>
                 <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition">
                   📤 Importar
                 </button>

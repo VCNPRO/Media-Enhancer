@@ -11,6 +11,7 @@ import { EnhancePhoto } from './pages/EnhancePhoto';
 import { GeminiAnalysis } from './pages/GeminiAnalysis';
 import { GeminiEnhancement } from './pages/GeminiEnhancement';
 import { GeminiCreative } from './pages/GeminiCreative';
+import { CloudUpload } from './pages/CloudUpload';
 import { useUserStore } from './store/userStore';
 import { useDashboardType } from './hooks/useFeatureAccess';
 
@@ -228,6 +229,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <GeminiCreative />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Procesamiento en la Nube */}
+          <Route
+            path="/cloud-upload"
+            element={
+              <ProtectedRoute>
+                <CloudUpload />
               </ProtectedRoute>
             }
           />

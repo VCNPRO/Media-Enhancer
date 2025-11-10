@@ -133,7 +133,7 @@ export const DashboardBasic: React.FC = () => {
             ¿Qué quieres hacer hoy?
           </h2>
 
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-5 gap-4">
             {/* Nuevo Video */}
             <Link
               to="/editor/new"
@@ -145,6 +145,20 @@ export const DashboardBasic: React.FC = () => {
               <h3 className="font-bold text-lg">Editar Video</h3>
               <p className="text-sm text-red-100 mt-2">
                 Cortar, añadir títulos y audio
+              </p>
+            </Link>
+
+            {/* Cloud Upload */}
+            <Link
+              to="/cloud-upload"
+              className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 p-6 rounded-xl text-center transition group"
+            >
+              <div className="text-5xl mb-3 group-hover:scale-110 transition">
+                ☁️
+              </div>
+              <h3 className="font-bold text-lg">Subir a Nube</h3>
+              <p className="text-sm text-blue-100 mt-2">
+                Videos grandes hasta 6GB
               </p>
             </Link>
 
