@@ -1,185 +1,99 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Test } from './Test';
-import { Landing } from './pages/Landing';
-import { DashboardBasic } from './pages/DashboardBasic';
-import { DashboardPro } from './pages/DashboardPro';
-import { EditorBasic } from './pages/EditorBasic';
-import { useUserStore } from './store/userStore';
-import { useDashboardType } from './hooks/useFeatureAccess';
+import React, { useState } from 'react';
+import { FileUploader, VideoMetadata } from './components/FileUploader';
+import { VideoPlayer } from './components/VideoPlayer';
+import { Timeline } from './components/Timeline';
+import { useCloudUpload } from './hooks/useCloudUpload';
 
-// Create a client for React Query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+interface MediaFile {
+  file: File;
+  name: string;
+  url: string;
+  type: string;
+  metadata: VideoMetadata;
+}
 
-// Component para proteger rutas que requieren autenticación
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const user = useUserStore((state) => state.user);
+const App: React.FC = () => {
+  const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
+  const [status, setStatus] = useState<string>('');
+  const { uploading, processing, progress, error: cloudError, uploadAndProcess } = useCloudUpload();
 
-  if (!user) {
-    // TODO: Redirigir a login cuando Clerk esté implementado
-    // Por ahora, creamos un usuario demo
-    return <Navigate to="/demo-setup" replace />;
-  }
+  const handleFileSelect = async (file: File, metadata: VideoMetadata) => {
+    console.log(`File: ${file.name}`);
+    console.log(`Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Type: ${file.type}`);
+    console.log(`Resolution: ${metadata.width}x${metadata.height}`);
+    console.log(`Duration: ${metadata.duration.toFixed(2)}s`);
+    console.log(`Is VHS: ${metadata.isVHS}`);
+    console.log(`Use Cloud: ${metadata.shouldUseServerProcessing ? 'Yes' : 'No (local)'}`);
 
-  return <>{children}</>;
-};
-
-// Component para redirigir al dashboard correcto según el plan
-const DashboardRouter: React.FC = () => {
-  const dashboardType = useDashboardType();
-
-  // Redirigir al dashboard apropiado según el tipo
-  if (dashboardType === 'basic') {
-    return <DashboardBasic />;
-  }
-
-  return <DashboardPro />;
-};
-
-// Página temporal para setup de usuario demo (mientras implementamos Clerk)
-const DemoSetup: React.FC = () => {
-  const navigate = useNavigate();
-  const setUser = useUserStore((state) => state.setUser);
-  const setUsage = useUserStore((state) => state.setUsage);
-
-  const createDemoUser = (planId: 'basic' | 'premium' | 'professional') => {
-    setUser({
-      id: 'demo-user-' + planId,
-      email: `demo-${planId}@example.com`,
-      name: 'Usuario Demo',
-      planId,
-      subscriptionStatus: 'active',
+    setMediaFile({
+      file,
+      name: file.name,
+      url: URL.createObjectURL(file),
+      type: file.type,
+      metadata,
     });
 
-    setUsage({
-      storageUsed: 7.5 * 1024 * 1024 * 1024, // 7.5 GB
-      projectsCount: 3,
-      exportsThisMonth: 5,
-      activeProcessingJobs: 0,
-    });
-
-    // Redirigir al dashboard
-    navigate('/dashboard');
+    if (metadata.shouldUseServerProcessing) {
+      setStatus('Uploading to Cloud Storage...');
+      try {
+        await uploadAndProcess(file);
+        setStatus('Cloud processing completed');
+      } catch (err: any) {
+        setStatus(`Error: ${err.message}`);
+      }
+    } else {
+      setStatus('Processing locally with FFmpeg...');
+      // Aquí puedes agregar lógica de procesamiento local
+      setStatus('Local processing completed');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-      <div className="max-w-2xl w-full p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">🎬 Media Enhancer</h1>
-          <p className="text-gray-400">Selecciona un plan para acceder al demo</p>
+    <main className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
+      <h1 className="text-3xl font-bold mb-6">Media Enhancer</h1>
+
+      <FileUploader onFileSelected={handleFileSelect} maxSize={6 * 1024 * 1024 * 1024} />
+
+      {status && (
+        <div className="mt-4 p-3 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300">
+          {status}
         </div>
+      )}
 
-        <div className="grid gap-4">
-          <button
-            onClick={() => createDemoUser('basic')}
-            className="bg-gray-800 hover:bg-gray-700 border-2 border-gray-700 hover:border-red-500 p-6 rounded-xl text-left transition"
-          >
-            <h3 className="text-xl font-bold mb-2">Plan Basic (€9.99/mes)</h3>
-            <p className="text-gray-400 mb-3">Dashboard Simple - Perfecto para VHS caseros</p>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ Editor simple e intuitivo</li>
-              <li>✓ Videos hasta 3 horas (VHS completos)</li>
-              <li>✓ 20 GB de almacenamiento</li>
-            </ul>
-          </button>
-
-          <button
-            onClick={() => createDemoUser('premium')}
-            className="bg-gray-800 hover:bg-gray-700 border-2 border-red-500 p-6 rounded-xl text-left transition relative"
-          >
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 px-4 py-1 rounded-full text-sm font-bold">
-              POPULAR
-            </div>
-            <h3 className="text-xl font-bold mb-2">Plan Premium (€24.99/mes)</h3>
-            <p className="text-gray-400 mb-3">Dashboard Profesional - Creadores de contenido</p>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ Editor profesional multicapa</li>
-              <li>✓ Transiciones, filtros, efectos</li>
-              <li>✓ 100 GB de almacenamiento</li>
-              <li className="text-yellow-500">🔒 Funciones IA bloqueadas</li>
-            </ul>
-          </button>
-
-          <button
-            onClick={() => createDemoUser('professional')}
-            className="bg-gray-800 hover:bg-gray-700 border-2 border-purple-500 p-6 rounded-xl text-left transition"
-          >
-            <h3 className="text-xl font-bold mb-2">Plan Professional (€49.99/mes)</h3>
-            <p className="text-gray-400 mb-3">Poder completo con IA - Sin límites</p>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>✓ Todo del Plan Premium +</li>
-              <li>✓ Todas las funciones IA desbloqueadas</li>
-              <li>✓ Upscaling 4K/8K con IA</li>
-              <li>✓ 500 GB de almacenamiento</li>
-            </ul>
-          </button>
+      {(uploading || processing) && (
+        <div className="mt-4 w-full max-w-md p-4 bg-gray-800 rounded-lg border border-gray-700">
+          <div className="mb-2 flex justify-between text-sm">
+            <span>{uploading ? 'Uploading...' : 'Processing...'}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-700 h-2 rounded-full">
+            <div
+              className="bg-red-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      )}
 
-const App: React.FC = () => {
-  const user = useUserStore((state) => state.user);
+      {cloudError && (
+        <p className="mt-4 text-sm text-red-400">Error: {cloudError}</p>
+      )}
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Página de prueba */}
-          <Route path="/test" element={<Test />} />
-
-          {/* Página pública */}
-          <Route path="/" element={<Landing />} />
-
-          {/* Demo setup (temporal) */}
-          <Route path="/demo-setup" element={<DemoSetup />} />
-
-          {/* Rutas protegidas */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardRouter />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Editor */}
-          <Route
-            path="/editor/new"
-            element={
-              <ProtectedRoute>
-                <EditorBasic />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/editor/:id"
-            element={
-              <ProtectedRoute>
-                <EditorBasic />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* TODO: Agregar más rutas */}
-          {/* <Route path="/pricing" element={<PricingPage />} /> */}
-
-          {/* Redirigir rutas no encontradas */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+      {mediaFile && (
+        <section className="mt-8 w-full max-w-3xl space-y-6">
+          <VideoPlayer src={mediaFile.url} />
+          <Timeline />
+          <div className="text-gray-400 text-sm space-y-1">
+            <p><strong>File:</strong> {mediaFile.name}</p>
+            <p><strong>Size:</strong> {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB</p>
+            <p><strong>Resolution:</strong> {mediaFile.metadata.width}x{mediaFile.metadata.height}</p>
+            <p><strong>Duration:</strong> {mediaFile.metadata.duration.toFixed(2)}s</p>
+            <p><strong>Processing:</strong> {mediaFile.metadata.shouldUseServerProcessing ? 'Cloud ☁️' : 'Local 💻'}</p>
+          </div>
+        </section>
+      )}
+    </main>
   );
 };
 

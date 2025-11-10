@@ -1,0 +1,68 @@
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+export interface UploadResponse {
+  success: boolean;
+  fileUrl: string;
+  fileName: string;
+}
+
+export interface ProcessResponse {
+  success: boolean;
+  processedUrl: string;
+  message: string;
+}
+
+/**
+ * Sube un video al backend (Cloud Storage)
+ */
+export const uploadVideo = async (file: File): Promise<UploadResponse> => {
+  const formData = new FormData();
+  formData.append('video', file);
+
+  const response = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Procesa un video en el backend con FFmpeg
+ */
+export const processVideo = async (
+  fileName: string,
+  options: {
+    format?: string;
+    quality?: string;
+    resolution?: string;
+  }
+): Promise<ProcessResponse> => {
+  const response = await fetch(`${API_URL}/process`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fileName,
+      ...options,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Processing failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Descarga un video procesado
+ */
+export const downloadVideo = (fileName: string): string => {
+  return `${API_URL}/download/${fileName}`;
+};

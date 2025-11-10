@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 interface FFmpegProgress {
   ratio: number;
@@ -20,7 +21,7 @@ interface UseFFmpegReturn {
 }
 
 export const useFFmpeg = (): UseFFmpegReturn => {
-  const ffmpegRef = useRef<any>(null);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,168 +29,132 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
   const load = useCallback(async () => {
     if (loaded || loading) {
-      console.log('⚠️ FFmpeg ya está cargado o cargándose, saltando...');
+      console.log('FFmpeg already loaded');
       return;
     }
 
-    // Variable para el timeout debe estar fuera del try
     let loadTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
       setLoading(true);
       setError(null);
 
-      console.log('🔄 Iniciando carga de FFmpeg.wasm...');
-      console.log('📦 Versión: @ffmpeg/ffmpeg@0.10.1 + @ffmpeg/core@0.10.0');
+      console.log('Loading FFmpeg.wasm...');
 
-      // Timeout para evitar bucles infinitos (60 segundos)
       loadTimeout = setTimeout(() => {
-        setError('Tiempo de carga agotado. Intenta recargar la página.');
+        setError('Loading timeout. Please reload the page.');
         setLoading(false);
-        console.error('❌ Timeout: Carga de FFmpeg excedió 60 segundos');
+        console.error('Timeout: FFmpeg loading exceeded 60 seconds');
       }, 60000);
 
-      // API v0.10: createFFmpeg con corePath y workerPath
-      const ffmpeg = createFFmpeg({
-        log: true,
-        corePath: '/ffmpeg/ffmpeg-core.js',
-        workerPath: '/ffmpeg/ffmpeg-core.worker.js',
-        progress: ({ ratio }) => {
-          setProgress({ ratio, time: 0 });
-          console.log(`📊 Progreso: ${Math.round(ratio * 100)}%`);
-        },
+      const ffmpeg = new FFmpeg();
+
+      ffmpeg.on('progress', ({ progress: prog }) => {
+        setProgress({ ratio: prog, time: 0 });
+        console.log(`Progress: ${Math.round(prog * 100)}%`);
       });
 
-      console.log('⚙️ Iniciando FFmpeg v0.10 (multi-threaded)...');
+      ffmpeg.on('log', ({ message }) => {
+        console.log('FFmpeg:', message);
+      });
 
-      await ffmpeg.load();
-
-      console.log('✅ ffmpeg.load() completado exitosamente');
-
-      // Limpiar timeout si la carga fue exitosa
-      if (loadTimeout) clearTimeout(loadTimeout);
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
 
       ffmpegRef.current = ffmpeg;
-      setLoaded(true);
-      console.log('✅ FFmpeg.wasm loaded successfully');
-    } catch (err) {
-      // Limpiar timeout en caso de error
-      if (loadTimeout) clearTimeout(loadTimeout);
 
-      console.error('❌ Error capturado en load():', err);
-      let errorMessage = 'Failed to load FFmpeg';
-
-      if (err instanceof Error) {
-        errorMessage = err.message;
-
-        // Mensajes de error más amigables
-        if (err.message.includes('SharedArrayBuffer')) {
-          errorMessage = 'Tu navegador no soporta SharedArrayBuffer. Prueba con Chrome o Edge actualizado.';
-        } else if (err.message.includes('CORS')) {
-          errorMessage = 'Error de CORS. Recarga la página (Ctrl+F5).';
-        } else if (err.message.includes('network')) {
-          errorMessage = 'Error de red. Verifica tu conexión a internet.';
-        }
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
       }
 
-      setError(errorMessage);
-      console.error('❌ Error loading FFmpeg:', err);
-    } finally {
+      setLoaded(true);
+      setLoading(false);
+      console.log('FFmpeg.wasm loaded successfully');
+    } catch (err: any) {
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
+      console.error('Error loading FFmpeg:', err);
+      setError(err.message || 'Unknown error loading FFmpeg');
       setLoading(false);
     }
   }, [loaded, loading]);
 
-  const executeCommand = useCallback(
-    async (command: string[]): Promise<Uint8Array | null> => {
-      if (!ffmpegRef.current || !loaded) {
-        throw new Error('FFmpeg is not loaded. Call load() first.');
+  const executeCommand = useCallback(async (command: string[]): Promise<Uint8Array | null> => {
+    if (!ffmpegRef.current || !loaded) {
+      throw new Error('FFmpeg is not loaded');
+    }
+
+    try {
+      console.log('Executing FFmpeg command:', command.join(' '));
+      await ffmpegRef.current.exec(command);
+      return null;
+    } catch (err: any) {
+      console.error('Error executing command:', err);
+      throw err;
+    }
+  }, [loaded]);
+
+  const writeFile = useCallback(async (name: string, data: File | Blob | Uint8Array | string) => {
+    if (!ffmpegRef.current || !loaded) {
+      throw new Error('FFmpeg is not loaded');
+    }
+
+    try {
+      let fileData: Uint8Array;
+
+      if (typeof data === 'string') {
+        fileData = new TextEncoder().encode(data);
+      } else if (data instanceof Uint8Array) {
+        fileData = data;
+      } else {
+        fileData = await fetchFile(data);
       }
 
-      try {
-        setProgress(null);
-        // API v0.11: usa run() en lugar de exec()
-        await ffmpegRef.current.run(...command);
-        return null;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'FFmpeg command failed';
-        setError(errorMessage);
-        throw err;
-      }
-    },
-    [loaded]
-  );
+      await ffmpegRef.current.writeFile(name, fileData);
+      console.log(`File written: ${name}`);
+    } catch (err: any) {
+      console.error(`Error writing file ${name}:`, err);
+      throw err;
+    }
+  }, [loaded]);
 
-  const writeFile = useCallback(
-    async (name: string, data: File | Blob | Uint8Array | string) => {
-      if (!ffmpegRef.current || !loaded) {
-        throw new Error('FFmpeg is not loaded');
-      }
+  const readFile = useCallback(async (name: string): Promise<Uint8Array> => {
+    if (!ffmpegRef.current || !loaded) {
+      throw new Error('FFmpeg is not loaded');
+    }
 
-      try {
-        let fileData: Uint8Array;
+    try {
+      const data = await ffmpegRef.current.readFile(name);
+      console.log(`File read: ${name}`);
+      return data as Uint8Array;
+    } catch (err: any) {
+      console.error(`Error reading file ${name}:`, err);
+      throw err;
+    }
+  }, [loaded]);
 
-        if (typeof data === 'string') {
-          // URL or base64
-          fileData = await fetchFile(data);
-        } else if (data instanceof Uint8Array) {
-          fileData = data;
-        } else {
-          // File or Blob
-          fileData = await fetchFile(data);
-        }
+  const deleteFile = useCallback(async (name: string) => {
+    if (!ffmpegRef.current || !loaded) {
+      throw new Error('FFmpeg is not loaded');
+    }
 
-        // API v0.11: usa FS('writeFile')
-        ffmpegRef.current.FS('writeFile', name, fileData);
-      } catch (err) {
-        console.error('Error writing file:', err);
-        throw err;
-      }
-    },
-    [loaded]
-  );
-
-  const readFile = useCallback(
-    async (name: string): Promise<Uint8Array> => {
-      if (!ffmpegRef.current || !loaded) {
-        throw new Error('FFmpeg is not loaded');
-      }
-
-      try {
-        // API v0.11: usa FS('readFile')
-        const data = ffmpegRef.current.FS('readFile', name);
-        return data as Uint8Array;
-      } catch (err) {
-        console.error('Error reading file:', err);
-        throw err;
-      }
-    },
-    [loaded]
-  );
-
-  const deleteFile = useCallback(
-    async (name: string) => {
-      if (!ffmpegRef.current || !loaded) {
-        throw new Error('FFmpeg is not loaded');
-      }
-
-      try {
-        // API v0.11: usa FS('unlink')
-        ffmpegRef.current.FS('unlink', name);
-      } catch (err) {
-        // Ignorar errores si el archivo no existe
-        console.warn('Error deleting file:', err);
-      }
-    },
-    [loaded]
-  );
+    try {
+      await ffmpegRef.current.deleteFile(name);
+      console.log(`File deleted: ${name}`);
+    } catch (err: any) {
+      console.error(`Error deleting file ${name}:`, err);
+      throw err;
+    }
+  }, [loaded]);
 
   const listFiles = useCallback(async (): Promise<string[]> => {
     if (!ffmpegRef.current || !loaded) {
       throw new Error('FFmpeg is not loaded');
     }
-
-    // FFmpeg.wasm no tiene método directo para listar archivos
-    // Esta es una implementación placeholder
     return [];
   }, [loaded]);
 
@@ -207,26 +172,53 @@ export const useFFmpeg = (): UseFFmpegReturn => {
   };
 };
 
-// Utilidades para operaciones comunes
 export const ffmpegUtils = {
-  // Convertir Uint8Array a Blob
   toBlobVideo: (data: Uint8Array, mimeType = 'video/mp4'): Blob => {
     return new Blob([data.buffer], { type: mimeType });
   },
 
-  // Convertir Uint8Array a URL descargable
   toObjectURL: (data: Uint8Array, mimeType = 'video/mp4'): string => {
     const blob = new Blob([data.buffer], { type: mimeType });
     return URL.createObjectURL(blob);
   },
 
-  // Detectar si el archivo es grande para procesamiento en navegador
-  shouldUseServerProcessing: (fileSizeBytes: number): boolean => {
-    const MAX_CLIENT_SIZE = 500 * 1024 * 1024; // 500 MB
-    return fileSizeBytes > MAX_CLIENT_SIZE;
+  shouldUseServerProcessing: async (file: File): Promise<boolean> => {
+    const MAX_CLIENT_SIZE = 50 * 1024 * 1024;
+    
+    if (file.size > MAX_CLIENT_SIZE) {
+      return true;
+    }
+    
+    if (file.type && file.type.startsWith('video/')) {
+      try {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        
+        const isHD = await new Promise<boolean>((resolve) => {
+          video.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(video.src);
+            const isHighRes = video.videoHeight >= 1080 || video.videoWidth >= 1920;
+            console.log(`Resolution: ${video.videoWidth}x${video.videoHeight} - HD: ${isHighRes}`);
+            resolve(isHighRes);
+          };
+          
+          video.onerror = () => {
+            resolve(false);
+          };
+          
+          video.src = URL.createObjectURL(file);
+        });
+        
+        return isHD;
+      } catch (err) {
+        console.error('Error detecting resolution:', err);
+        return false;
+      }
+    }
+    
+    return false;
   },
 
-  // Estimar duración de video desde metadatos
   getVideoDuration: async (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -245,7 +237,6 @@ export const ffmpegUtils = {
     });
   },
 
-  // Detectar si es video VHS (PAL 720x576)
   isVHSFormat: async (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
       const video = document.createElement('video');

@@ -22,10 +22,17 @@ build
 .env
 .env.local
 .env.production
+.env.development
 .env.*.local
 backend/.env
 frontend/.env.local
 *.local
+
+# Google Cloud credentials (NUNCA subir)
+service-account-key.json
+**/service-account-key.json
+*.json.key
+**/credentials.json
 
 # Temporary files
 uploads/
