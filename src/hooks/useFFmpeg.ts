@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
 interface FFmpegProgress {
   ratio: number;
@@ -29,7 +29,7 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
   const load = useCallback(async () => {
     if (loaded || loading) {
-      console.log('FFmpeg already loaded');
+      console.log('✅ FFmpeg ya está cargado');
       return;
     }
 
@@ -39,30 +39,25 @@ export const useFFmpeg = (): UseFFmpegReturn => {
       setLoading(true);
       setError(null);
 
-      console.log('Loading FFmpeg.wasm...');
+      console.log('🔄 Cargando FFmpeg.wasm desde archivos locales...');
 
       loadTimeout = setTimeout(() => {
-        setError('Loading timeout. Please reload the page.');
+        setError('⏱️ Timeout cargando FFmpeg. Recarga la página.');
         setLoading(false);
-        console.error('Timeout: FFmpeg loading exceeded 60 seconds');
+        console.error('❌ Timeout: FFmpeg excedió 60 segundos');
       }, 60000);
 
-      const ffmpeg = new FFmpeg();
-
-      ffmpeg.on('progress', ({ progress: prog }) => {
-        setProgress({ ratio: prog, time: 0 });
-        console.log(`Progress: ${Math.round(prog * 100)}%`);
+      // API v0.10: createFFmpeg con corePath
+      const ffmpeg = createFFmpeg({
+        log: true,
+        corePath: '/ffmpeg/ffmpeg-core.js',
+        progress: ({ ratio }) => {
+          setProgress({ ratio, time: 0 });
+          console.log(`📊 Progreso: ${Math.round(ratio * 100)}%`);
+        },
       });
 
-      ffmpeg.on('log', ({ message }) => {
-        console.log('FFmpeg:', message);
-      });
-
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
+      await ffmpeg.load();
 
       ffmpegRef.current = ffmpeg;
 
@@ -72,35 +67,36 @@ export const useFFmpeg = (): UseFFmpegReturn => {
 
       setLoaded(true);
       setLoading(false);
-      console.log('FFmpeg.wasm loaded successfully');
+      console.log('✅ FFmpeg.wasm cargado exitosamente');
     } catch (err: any) {
       if (loadTimeout) {
         clearTimeout(loadTimeout);
       }
-      console.error('Error loading FFmpeg:', err);
-      setError(err.message || 'Unknown error loading FFmpeg');
+      console.error('❌ Error cargando FFmpeg:', err);
+      setError(err.message || 'Error desconocido cargando FFmpeg');
       setLoading(false);
     }
   }, [loaded, loading]);
 
   const executeCommand = useCallback(async (command: string[]): Promise<Uint8Array | null> => {
     if (!ffmpegRef.current || !loaded) {
-      throw new Error('FFmpeg is not loaded');
+      throw new Error('FFmpeg no está cargado');
     }
 
     try {
-      console.log('Executing FFmpeg command:', command.join(' '));
-      await ffmpegRef.current.exec(command);
+      console.log('⚙️ Ejecutando comando FFmpeg:', command.join(' '));
+      // API v0.10: run() en lugar de exec()
+      await ffmpegRef.current.run(...command);
       return null;
     } catch (err: any) {
-      console.error('Error executing command:', err);
+      console.error('❌ Error ejecutando comando:', err);
       throw err;
     }
   }, [loaded]);
 
   const writeFile = useCallback(async (name: string, data: File | Blob | Uint8Array | string) => {
     if (!ffmpegRef.current || !loaded) {
-      throw new Error('FFmpeg is not loaded');
+      throw new Error('FFmpeg no está cargado');
     }
 
     try {
@@ -114,39 +110,42 @@ export const useFFmpeg = (): UseFFmpegReturn => {
         fileData = await fetchFile(data);
       }
 
-      await ffmpegRef.current.writeFile(name, fileData);
-      console.log(`File written: ${name}`);
+      // API v0.10: FS método
+      ffmpegRef.current.FS('writeFile', name, fileData);
+      console.log(`📝 Archivo escrito: ${name}`);
     } catch (err: any) {
-      console.error(`Error writing file ${name}:`, err);
+      console.error(`❌ Error escribiendo archivo ${name}:`, err);
       throw err;
     }
   }, [loaded]);
 
   const readFile = useCallback(async (name: string): Promise<Uint8Array> => {
     if (!ffmpegRef.current || !loaded) {
-      throw new Error('FFmpeg is not loaded');
+      throw new Error('FFmpeg no está cargado');
     }
 
     try {
-      const data = await ffmpegRef.current.readFile(name);
-      console.log(`File read: ${name}`);
+      // API v0.10: FS método
+      const data = ffmpegRef.current.FS('readFile', name);
+      console.log(`📖 Archivo leído: ${name}`);
       return data as Uint8Array;
     } catch (err: any) {
-      console.error(`Error reading file ${name}:`, err);
+      console.error(`❌ Error leyendo archivo ${name}:`, err);
       throw err;
     }
   }, [loaded]);
 
   const deleteFile = useCallback(async (name: string) => {
     if (!ffmpegRef.current || !loaded) {
-      throw new Error('FFmpeg is not loaded');
+      throw new Error('FFmpeg no está cargado');
     }
 
     try {
-      await ffmpegRef.current.deleteFile(name);
-      console.log(`File deleted: ${name}`);
+      // API v0.10: FS método
+      ffmpegRef.current.FS('unlink', name);
+      console.log(`🗑️ Archivo eliminado: ${name}`);
     } catch (err: any) {
-      console.error(`Error deleting file ${name}:`, err);
+      console.error(`❌ Error eliminando archivo ${name}:`, err);
       throw err;
     }
   }, [loaded]);
