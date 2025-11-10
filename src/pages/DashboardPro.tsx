@@ -356,7 +356,17 @@ export const DashboardPro: React.FC = () => {
               </div>
             )}
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Gemini Studio - App Completa */}
+              <Link
+                to="/gemini/studio"
+                className="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 p-6 rounded-xl border-2 border-purple-400 text-center group relative"
+              >
+                <div className="text-5xl mb-3 group-hover:scale-110 transition">🎬</div>
+                <h3 className="font-bold mb-2">Gemini Studio</h3>
+                <p className="text-sm text-purple-100">App completa de IA</p>
+              </Link>
+
               {/* AI Tools */}
               <Link
                 to="/gemini/analysis"

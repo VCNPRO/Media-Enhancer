@@ -11,6 +11,7 @@ import { EnhancePhoto } from './pages/EnhancePhoto';
 import { GeminiAnalysis } from './pages/GeminiAnalysis';
 import { GeminiEnhancement } from './pages/GeminiEnhancement';
 import { GeminiCreative } from './pages/GeminiCreative';
+import { GeminiStudio } from './pages/GeminiStudio';
 import { CloudUpload } from './pages/CloudUpload';
 import { useUserStore } from './store/userStore';
 import { useDashboardType } from './hooks/useFeatureAccess';
@@ -229,6 +230,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <GeminiCreative />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gemini/studio"
+            element={
+              <ProtectedRoute>
+                <GeminiStudio />
               </ProtectedRoute>
             }
           />
