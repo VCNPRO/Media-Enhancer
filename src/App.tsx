@@ -8,6 +8,9 @@ import { DashboardPro } from './pages/DashboardPro';
 import { EditorBasic } from './pages/EditorBasic';
 import { Pricing } from './pages/Pricing';
 import { EnhancePhoto } from './pages/EnhancePhoto';
+import { GeminiAnalysis } from './pages/GeminiAnalysis';
+import { GeminiEnhancement } from './pages/GeminiEnhancement';
+import { GeminiCreative } from './pages/GeminiCreative';
 import { useUserStore } from './store/userStore';
 import { useDashboardType } from './hooks/useFeatureAccess';
 
@@ -199,6 +202,32 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <EditorBasic />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Herramientas de Gemini AI */}
+          <Route
+            path="/gemini/analysis"
+            element={
+              <ProtectedRoute>
+                <GeminiAnalysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gemini/enhancement"
+            element={
+              <ProtectedRoute>
+                <GeminiEnhancement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gemini/creative"
+            element={
+              <ProtectedRoute>
+                <GeminiCreative />
               </ProtectedRoute>
             }
           />

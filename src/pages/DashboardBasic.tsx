@@ -192,6 +192,62 @@ export const DashboardBasic: React.FC = () => {
           </div>
         </div>
 
+        {/* Herramientas IA */}
+        <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 p-8 rounded-xl border border-purple-500/30 mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-2">
+              🤖 Herramientas de Inteligencia Artificial
+            </h2>
+            <p className="text-gray-400">
+              Potencia tus medios con la tecnología de Gemini AI
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Análisis IA */}
+            <Link
+              to="/gemini/analysis"
+              className="bg-gray-800/80 hover:bg-gray-700/80 p-6 rounded-xl text-center transition group border border-purple-500/20"
+            >
+              <div className="text-5xl mb-3 group-hover:scale-110 transition">
+                🤖
+              </div>
+              <h3 className="font-bold text-lg">Análisis con IA</h3>
+              <p className="text-sm text-gray-300 mt-2">
+                Describe y analiza tus archivos
+              </p>
+            </Link>
+
+            {/* Mejora IA */}
+            <Link
+              to="/gemini/enhancement"
+              className="bg-gray-800/80 hover:bg-gray-700/80 p-6 rounded-xl text-center transition group border border-purple-500/20"
+            >
+              <div className="text-5xl mb-3 group-hover:scale-110 transition">
+                ✨
+              </div>
+              <h3 className="font-bold text-lg">Mejora con IA</h3>
+              <p className="text-sm text-gray-300 mt-2">
+                Colorear y mejorar calidad
+              </p>
+            </Link>
+
+            {/* Creación IA */}
+            <Link
+              to="/gemini/creative"
+              className="bg-gray-800/80 hover:bg-gray-700/80 p-6 rounded-xl text-center transition group border border-purple-500/20"
+            >
+              <div className="text-5xl mb-3 group-hover:scale-110 transition">
+                🎨
+              </div>
+              <h3 className="font-bold text-lg">Generación Creativa</h3>
+              <p className="text-sm text-gray-300 mt-2">
+                Crea imágenes desde ideas
+              </p>
+            </Link>
+          </div>
+        </div>
+
         {/* Mis Videos */}
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
           <div className="flex justify-between items-center mb-6">

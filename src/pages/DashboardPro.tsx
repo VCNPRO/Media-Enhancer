@@ -351,47 +351,68 @@ export const DashboardPro: React.FC = () => {
 
             <div className="grid md:grid-cols-3 gap-4">
               {/* AI Tools */}
-              <div
+              <Link
+                to="/gemini/analysis"
                 className={`bg-gray-800 p-6 rounded-xl border ${
                   aiUpscalingAccess.isLocked
-                    ? 'border-gray-700 opacity-60'
-                    : 'border-purple-500 hover:border-purple-400'
+                    ? 'border-gray-700 opacity-60 cursor-not-allowed pointer-events-none'
+                    : 'border-purple-500 hover:border-purple-400 cursor-pointer'
                 } transition text-center group relative`}
               >
                 {aiUpscalingAccess.isLocked && (
                   <div className="absolute top-2 right-2 text-2xl">🔒</div>
                 )}
-                <div className="text-5xl mb-3 group-hover:scale-110 transition">⬆️</div>
-                <h3 className="font-bold mb-2">Upscaling IA</h3>
-                <p className="text-sm text-gray-400">SD → HD → 4K → 8K</p>
+                <div className="text-5xl mb-3 group-hover:scale-110 transition">🤖</div>
+                <h3 className="font-bold mb-2">Análisis con IA</h3>
+                <p className="text-sm text-gray-400">Describe y analiza contenido</p>
                 {aiUpscalingAccess.isLocked && (
                   <p className="text-xs text-yellow-500 mt-2">
                     Requiere: {aiUpscalingAccess.requiredPlan}
                   </p>
                 )}
-              </div>
+              </Link>
 
-              <div
+              <Link
+                to="/gemini/enhancement"
                 className={`bg-gray-800 p-6 rounded-xl border ${
                   aiSubtitlesAccess.isLocked
-                    ? 'border-gray-700 opacity-60'
-                    : 'border-purple-500 hover:border-purple-400'
+                    ? 'border-gray-700 opacity-60 cursor-not-allowed pointer-events-none'
+                    : 'border-purple-500 hover:border-purple-400 cursor-pointer'
                 } transition text-center group relative`}
               >
                 {aiSubtitlesAccess.isLocked && (
                   <div className="absolute top-2 right-2 text-2xl">🔒</div>
                 )}
-                <div className="text-5xl mb-3 group-hover:scale-110 transition">📜</div>
-                <h3 className="font-bold mb-2">Auto-Subtítulos</h3>
-                <p className="text-sm text-gray-400">Transcripción + Traducción</p>
+                <div className="text-5xl mb-3 group-hover:scale-110 transition">✨</div>
+                <h3 className="font-bold mb-2">Mejora con IA</h3>
+                <p className="text-sm text-gray-400">Colorear y mejorar medios</p>
                 {aiSubtitlesAccess.isLocked && (
                   <p className="text-xs text-yellow-500 mt-2">
                     Requiere: {aiSubtitlesAccess.requiredPlan}
                   </p>
                 )}
-              </div>
+              </Link>
 
-              {/* More AI tools... */}
+              <Link
+                to="/gemini/creative"
+                className={`bg-gray-800 p-6 rounded-xl border ${
+                  aiUpscalingAccess.isLocked
+                    ? 'border-gray-700 opacity-60 cursor-not-allowed pointer-events-none'
+                    : 'border-purple-500 hover:border-purple-400 cursor-pointer'
+                } transition text-center group relative`}
+              >
+                {aiUpscalingAccess.isLocked && (
+                  <div className="absolute top-2 right-2 text-2xl">🔒</div>
+                )}
+                <div className="text-5xl mb-3 group-hover:scale-110 transition">🎨</div>
+                <h3 className="font-bold mb-2">Generación Creativa</h3>
+                <p className="text-sm text-gray-400">Crea imágenes desde ideas</p>
+                {aiUpscalingAccess.isLocked && (
+                  <p className="text-xs text-yellow-500 mt-2">
+                    Requiere: {aiUpscalingAccess.requiredPlan}
+                  </p>
+                )}
+              </Link>
             </div>
           </div>
         )}
