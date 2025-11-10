@@ -6,6 +6,8 @@ import { Landing } from './pages/Landing';
 import { DashboardBasic } from './pages/DashboardBasic';
 import { DashboardPro } from './pages/DashboardPro';
 import { EditorBasic } from './pages/EditorBasic';
+import { Pricing } from './pages/Pricing';
+import { EnhancePhoto } from './pages/EnhancePhoto';
 import { useUserStore } from './store/userStore';
 import { useDashboardType } from './hooks/useFeatureAccess';
 
@@ -172,8 +174,34 @@ const App: React.FC = () => {
             }
           />
 
-          {/* TODO: Agregar más rutas */}
-          {/* <Route path="/pricing" element={<PricingPage />} /> */}
+          {/* Páginas públicas adicionales */}
+          <Route path="/pricing" element={<Pricing />} />
+
+          {/* Herramientas adicionales */}
+          <Route
+            path="/enhance-photo"
+            element={
+              <ProtectedRoute>
+                <EnhancePhoto />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/editor/audio"
+            element={
+              <ProtectedRoute>
+                <EditorBasic />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/editor/rotate"
+            element={
+              <ProtectedRoute>
+                <EditorBasic />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirigir rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
