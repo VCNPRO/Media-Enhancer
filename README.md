@@ -1,120 +1,124 @@
 # 🎬 Media Enhancer
 
-**AI-Powered Video & Audio Editing Platform**
+**Video Processing Platform con FFmpeg**
 
-A modern web application for video and audio editing with artificial intelligence enhancements. Built with React, Express, PostgreSQL, and Google Gemini AI.
+Aplicación web para procesamiento y mejora de videos usando FFmpeg. Soporta procesamiento en el navegador (videos pequeños) y en servidor con Google Cloud (videos grandes hasta 6GB).
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Authentication** - Secure user authentication with Clerk
-- 💳 **Subscriptions** - Flexible pricing tiers with Stripe
-- 📹 **Video Editor** - Web-based video editing interface
-- 🤖 **AI Enhancements** - Powered by Google Gemini 2.0
-- ☁️ **Cloud Storage** - Reliable storage with Cloudflare R2
-- 📊 **Usage Tracking** - Monitor your storage and export limits
+- 📹 **Procesamiento en Navegador** - Videos pequeños con FFmpeg.wasm
+- ☁️ **Procesamiento en Servidor** - Videos grandes (hasta 6GB) con Google Cloud Run
+- 🎬 **Conversión de Formatos** - Optimización H.264/AAC para streaming
+- 📦 **Google Cloud Storage** - Almacenamiento escalable y seguro
+- 🔒 **URLs Firmadas** - Subida y descarga seguras
+- ⚡ **Multi-threading** - Procesamiento rápido con SharedArrayBuffer
 
 ---
 
 ## 🏗️ Tech Stack
 
-### Frontend
-- React 18 + TypeScript
+### Frontend (Vercel)
+- React 19 + TypeScript
 - Vite
 - Tailwind CSS
-- Clerk React
+- FFmpeg.wasm v0.10
 - React Router
 - TanStack Query
+- Zustand
 
-### Backend
-- Node.js + Express
-- TypeScript
-- Clerk Express SDK
-- Stripe
-- PostgreSQL (Supabase)
-- Cloudflare R2
+### Backend (Google Cloud Run)
+- Node.js 18 + Express
+- FFmpeg (fluent-ffmpeg)
+- Google Cloud Storage
+- Multer
+- Docker
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+
-- npm 10+
-- Accounts created on:
-  - [Clerk](https://clerk.com) (Authentication)
-  - [Supabase](https://supabase.com) (Database)
-  - [Stripe](https://stripe.com) (Payments)
+- Node.js 18+
+- npm 9+
+- Cuenta de Google Cloud con:
+  - Cloud Run API habilitada
+  - Cloud Storage API habilitada
+  - Bucket de Storage creado
+  - Service Account con permisos
 
-### Installation
+### Desarrollo Local
 
-1. **Clone the repository**
+1. **Clonar el repositorio**
 ```bash
 git clone https://github.com/VCNPRO/Media-Enhancer.git
 cd Media-Enhancer
 ```
 
-2. **Configure Backend**
+2. **Instalar dependencias del frontend**
 ```bash
-cd backend
 npm install
+```
+
+3. **Configurar variables de entorno**
+```bash
 cp .env.example .env
-# Edit .env with your API keys
+# Editar .env con VITE_BACKEND_URL
 ```
 
-3. **Configure Frontend**
+4. **Iniciar servidor de desarrollo**
 ```bash
-cd ../frontend
-npm install
-cp .env.example .env.local
-# Edit .env.local with your API keys
+npm run dev
 ```
 
-4. **Set up Database**
-- Go to Supabase SQL Editor
-- Run the schema from `backend/src/db/schema.sql`
-- See `backend/src/db/README.md` for detailed instructions
+5. **Abrir la aplicación**
+```
+http://localhost:5173
+```
 
-5. **Start Development Servers**
+### Despliegue en Producción
 
-Terminal 1 (Backend):
+#### Frontend en Vercel
+
+El proyecto ya está conectado a Vercel. Los cambios se despliegan automáticamente al hacer push a GitHub.
+
+**Configurar variable de entorno en Vercel:**
+```
+VITE_BACKEND_URL=https://tu-backend-url.a.run.app
+```
+
+#### Backend en Google Cloud Run
+
+Ver guía completa en [`backend/DEPLOY.md`](./backend/DEPLOY.md)
+
+**Despliegue rápido:**
 ```bash
 cd backend
-npm run dev
+gcloud run deploy media-enhancer-backend \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --memory 2Gi \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=tu-proyecto \
+  --set-env-vars GOOGLE_CLOUD_BUCKET=tu-bucket
 ```
-
-Terminal 2 (Frontend):
-```bash
-cd frontend
-npm run dev
-```
-
-6. **Open the app**
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
 
 ---
 
-## 📋 Environment Variables
+## 📋 Variables de Entorno
+
+### Frontend (`.env`)
+```env
+VITE_BACKEND_URL=https://tu-backend-url.a.run.app
+```
 
 ### Backend (`backend/.env`)
 ```env
-PORT=3001
-NODE_ENV=development
-CLERK_PUBLISHABLE_KEY=pk_test_your_key
-CLERK_SECRET_KEY=sk_test_your_key
-DATABASE_URL=postgresql://user:pass@host:5432/db
-STRIPE_SECRET_KEY=sk_test_your_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_key
-GEMINI_API_KEY=your_key
-```
-
-### Frontend (`frontend/.env.local`)
-```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key
-VITE_API_URL=http://localhost:3001
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
+GOOGLE_CLOUD_PROJECT=tu-proyecto-id
+GOOGLE_CLOUD_BUCKET=tu-bucket-name
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+PORT=8080
 ```
 
 ---
