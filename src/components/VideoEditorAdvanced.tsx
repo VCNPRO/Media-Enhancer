@@ -379,17 +379,17 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
         <div className="flex border-b border-gray-700">
           <button
             onClick={() => setActiveTab('cut')}
-            className={`flex-1 px-4 py-3 font-semibold transition ${
+            className={`flex-1 px-2 py-2 text-xs transition ${
               activeTab === 'cut'
                 ? 'bg-red-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-white'
             }`}
           >
-            ✂️ Cortar Escenas
+            ✂️ Cortar
           </button>
           <button
             onClick={() => setActiveTab('audio')}
-            className={`flex-1 px-4 py-3 font-semibold transition ${
+            className={`flex-1 px-2 py-2 text-xs transition ${
               activeTab === 'audio'
                 ? 'bg-red-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -399,7 +399,7 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('titles')}
-            className={`flex-1 px-4 py-3 font-semibold transition ${
+            className={`flex-1 px-2 py-2 text-xs transition ${
               activeTab === 'titles'
                 ? 'bg-red-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -409,58 +409,58 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-3">
           {/* Cut Tab */}
           {activeTab === 'cut' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-3">
+              <div className="space-y-2">
                 <button
                   onClick={setMarkStart}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>📍</span>
-                  Marcar Inicio
+                  Inicio
                 </button>
 
                 <button
                   onClick={setMarkEnd}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  className="w-full px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>📍</span>
-                  Marcar Fin
+                  Fin
                 </button>
 
                 <button
                   onClick={addSegment}
                   disabled={startMark === null || endMark === null}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  className="w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>➕</span>
-                  Añadir Segmento
+                  Añadir
                 </button>
 
                 <button
                   onClick={clearMarks}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  className="w-full px-3 py-1.5 bg-gray-600 hover:bg-gray-700 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>🗑️</span>
-                  Limpiar Marcas
+                  Limpiar
                 </button>
               </div>
 
               {(startMark !== null || endMark !== null) && (
-                <div className="p-3 bg-gray-700 rounded-lg text-sm">
-                  <div className="flex gap-4">
+                <div className="p-2 bg-gray-700 rounded text-xs">
+                  <div className="space-y-1">
                     {startMark !== null && (
-                      <span className="text-green-400">▶️ Inicio: {formatTime(startMark)}</span>
+                      <div className="text-green-400">▶️ {formatTime(startMark)}</div>
                     )}
                     {endMark !== null && (
-                      <span className="text-red-400">⏹️ Fin: {formatTime(endMark)}</span>
+                      <div className="text-red-400">⏹️ {formatTime(endMark)}</div>
                     )}
                     {startMark !== null && endMark !== null && (
-                      <span className="text-blue-400">
-                        ⏱️ Duración: {formatTime(endMark - startMark)}
-                      </span>
+                      <div className="text-blue-400">
+                        ⏱️ {formatTime(endMark - startMark)}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -468,32 +468,29 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
               {segments.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2">Segmentos ({segments.length})</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-xs font-semibold mb-2">Segmentos ({segments.length})</h4>
+                  <div className="space-y-1.5">
                     {segments.map((segment, index) => (
                       <div
                         key={segment.id}
-                        className="flex items-center justify-between p-3 bg-gray-700 rounded-lg"
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded text-xs"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <span className="font-bold text-blue-400">#{index + 1}</span>
-                          <div className="text-sm">
+                          <div>
                             {formatTime(segment.start)} → {formatTime(segment.end)}
-                            <span className="text-gray-400 ml-2">
-                              ({formatTime(segment.duration)})
-                            </span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <button
                             onClick={() => seekTo(segment.start)}
-                            className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+                            className="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-xs"
                           >
                             ▶️
                           </button>
                           <button
                             onClick={() => removeSegment(segment.id)}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                            className="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded text-xs"
                           >
                             🗑️
                           </button>
@@ -508,12 +505,10 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
           {/* Audio Tab */}
           {activeTab === 'audio' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h4 className="font-semibold mb-3">Añadir Audio</h4>
-                <p className="text-sm text-gray-400 mb-3">
-                  Añade música o efectos de sonido que se reproducirán desde la posición actual del
-                  video
+                <p className="text-xs text-gray-400 mb-2">
+                  Añade audio desde la posición actual
                 </p>
                 <input
                   ref={audioFileInputRef}
@@ -524,34 +519,33 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
                 />
                 <button
                   onClick={() => audioFileInputRef.current?.click()}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition flex items-center gap-2"
+                  className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>➕</span>
-                  Seleccionar Archivo de Audio
+                  Subir Audio
                 </button>
               </div>
 
               {audioTracks.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2">Pistas de Audio ({audioTracks.length})</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-xs font-semibold mb-2">Audios ({audioTracks.length})</h4>
+                  <div className="space-y-1.5">
                     {audioTracks.map((track, index) => (
                       <div
                         key={track.id}
-                        className="flex items-center justify-between p-3 bg-gray-700 rounded-lg"
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded text-xs"
                       >
-                        <div>
-                          <div className="font-semibold">{track.name}</div>
-                          <div className="text-sm text-gray-400">
-                            Empieza en: {formatTime(track.start)} • Duración:{' '}
-                            {formatTime(track.duration)}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{track.name}</div>
+                          <div className="text-[10px] text-gray-400">
+                            {formatTime(track.start)} • {formatTime(track.duration)}
                           </div>
                         </div>
                         <button
                           onClick={() => removeAudioTrack(track.id)}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                          className="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded text-xs ml-2"
                         >
-                          🗑️ Eliminar
+                          🗑️
                         </button>
                       </div>
                     ))}
@@ -559,24 +553,22 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
                 </div>
               )}
 
-              <div className="p-4 bg-yellow-900/20 border border-yellow-500 rounded-lg text-sm text-yellow-400">
-                ⚠️ Nota: El procesamiento de audio múltiple requiere recodificación completa del
-                video.
+              <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-[10px] text-yellow-400">
+                ⚠️ El audio requiere recodificación
               </div>
             </div>
           )}
 
           {/* Titles Tab */}
           {activeTab === 'titles' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h4 className="font-semibold mb-3">Añadir Título</h4>
-                <p className="text-sm text-gray-400 mb-3">
-                  Añade texto que aparecerá en el video desde la posición actual
+                <p className="text-xs text-gray-400 mb-2">
+                  Añade texto desde la posición actual
                 </p>
                 <button
                   onClick={openTitleEditor}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition flex items-center gap-2"
+                  className="w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-xs transition flex items-center justify-center gap-1.5"
                 >
                   <span>➕</span>
                   Crear Título
@@ -585,22 +577,22 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
               {titles.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2">Títulos ({titles.length})</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-xs font-semibold mb-2">Títulos ({titles.length})</h4>
+                  <div className="space-y-1.5">
                     {titles.map((title, index) => (
                       <div
                         key={title.id}
-                        className="flex items-center justify-between p-3 bg-gray-700 rounded-lg"
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded text-xs"
                       >
-                        <div className="flex-1">
-                          <div className="font-semibold">{title.text}</div>
-                          <div className="text-sm text-gray-400">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{title.text}</div>
+                          <div className="text-[10px] text-gray-400">
                             {formatTime(title.start)} • {formatTime(title.duration)} • {title.position}
                           </div>
                         </div>
                         <button
                           onClick={() => removeTitle(title.id)}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                          className="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded text-xs ml-2"
                         >
                           🗑️
                         </button>
@@ -739,21 +731,19 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
       </div>
 
       {/* Render Section */}
-      <div className="bg-gradient-to-r from-red-900/50 to-pink-900/50 border-2 border-red-500/50 rounded-lg p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-bold text-lg mb-1">Renderizar Video</h4>
-              <p className="text-sm text-gray-300">
-                {segments.length === 0
-                  ? 'Añade segmentos para renderizar el video editado'
-                  : `${segments.length} segmento(s) • ${audioTracks.length} audio(s) • ${titles.length} título(s)`}
-              </p>
-            </div>
+      <div className="bg-gradient-to-r from-red-900/50 to-pink-900/50 border-2 border-red-500/50 rounded-lg p-3">
+        <div className="space-y-2">
+          <div>
+            <h4 className="text-xs font-bold mb-1">Renderizar</h4>
+            <p className="text-[10px] text-gray-300 mb-2">
+              {segments.length === 0
+                ? 'Añade segmentos primero'
+                : `${segments.length} seg • ${audioTracks.length} aud • ${titles.length} tít`}
+            </p>
             <button
               onClick={renderVideo}
               disabled={segments.length === 0 || rendering}
-              className="px-8 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-bold transition flex items-center gap-2"
+              className="w-full px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-xs transition flex items-center justify-center gap-1.5"
             >
               {rendering ? (
                 <>
@@ -763,7 +753,7 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
               ) : (
                 <>
                   <span>🎬</span>
-                  Renderizar Video
+                  Renderizar
                 </>
               )}
             </button>
@@ -771,13 +761,13 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
           {rendering && (
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-semibold">Progreso de renderizado</span>
-                <span className="text-sm text-gray-300">{renderProgress}%</span>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px]">Progreso</span>
+                <span className="text-[10px] text-gray-300">{renderProgress}%</span>
               </div>
-              <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
+              <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
                 <div
-                  className="bg-red-500 h-3 rounded-full transition-all duration-300"
+                  className="bg-red-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${renderProgress}%` }}
                 />
               </div>
@@ -785,31 +775,24 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           )}
 
           {renderError && (
-            <div className="p-3 bg-red-900/30 border border-red-500 rounded-lg text-red-400 text-sm">
+            <div className="p-2 bg-red-900/30 border border-red-500 rounded text-red-400 text-[10px]">
               ❌ {renderError}
             </div>
           )}
 
           {renderedUrl && !rendering && (
-            <div className="p-4 bg-green-900/20 border border-green-500 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-green-400 mb-1">
-                    ✅ Video renderizado exitosamente
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    Tu video editado está listo para descargar
-                  </p>
-                </div>
-                <a
-                  href={renderedUrl}
-                  download={`edited_${fileName}`}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition flex items-center gap-2"
-                >
-                  <span>⬇️</span>
-                  Descargar Video
-                </a>
+            <div className="p-2 bg-green-900/20 border border-green-500 rounded">
+              <div className="text-[10px] text-green-400 mb-2">
+                ✅ Listo para descargar
               </div>
+              <a
+                href={renderedUrl}
+                download={`edited_${fileName}`}
+                className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"
+              >
+                <span>⬇️</span>
+                Descargar
+              </a>
             </div>
           )}
         </div>
