@@ -1,100 +1,211 @@
 import React, { useState } from 'react';
-import { FileUploader, VideoMetadata } from './components/FileUploader';
-import { VideoPlayer } from './components/VideoPlayer';
-import { Timeline } from './components/Timeline';
+import { Header } from './components/Header';
+import { FileUpload } from './components/FileUpload';
+import { AnalysisPanel } from './components/AnalysisPanel';
+import { EnhancementPanel } from './components/EnhancementPanel';
+import { CreativeToolsPanel } from './components/CreativeToolsPanel';
+import { Tabs } from './components/Tabs';
+import { CustomVideoPlayer } from './components/CustomVideoPlayer';
+import { HistorySidebar } from './components/HistorySidebar';
 import { useCloudUpload } from './hooks/useCloudUpload';
+import { ffmpegUtils } from './hooks/useFFmpeg';
+import type { MediaFile, AnalysisResult, EnhancementResult, StoryboardFrame, HistoryItem, CreativeResult } from '../types';
 
-interface MediaFile {
-  file: File;
-  name: string;
-  url: string;
-  type: string;
-  metadata: VideoMetadata;
-}
+const getMediaType = (file: File): 'image' | 'video' | 'audio' => {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+    // Fallback for uncommon mimetypes
+    return 'image';
+};
 
 const App: React.FC = () => {
-  const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
-  const [status, setStatus] = useState<string>('');
-  const { uploading, processing, progress, error: cloudError, uploadAndProcess } = useCloudUpload();
+    const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
+    const [activeTab, setActiveTab] = useState('creative');
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null);
 
-  const handleFileSelect = async (file: File, metadata: VideoMetadata) => {
-    console.log(`File: ${file.name}`);
-    console.log(`Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`Type: ${file.type}`);
-    console.log(`Resolution: ${metadata.width}x${metadata.height}`);
-    console.log(`Duration: ${metadata.duration.toFixed(2)}s`);
-    console.log(`Is VHS: ${metadata.isVHS}`);
-    console.log(`Use Cloud: ${metadata.shouldUseServerProcessing ? 'Yes' : 'No (local)'}`);
+    // Hook para procesamiento en la nube
+    const { uploading, processing, progress, error: cloudError, uploadAndProcess } = useCloudUpload();
 
-    setMediaFile({
-      file,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      type: file.type,
-      metadata,
-    });
+    const handleFileChange = async (file: File | null) => {
+        if (file) {
+            const mediaType = getMediaType(file);
+            const shouldUseCloud = ffmpegUtils.shouldUseServerProcessing(file.size);
+            
+            console.log(`📦 Archivo: ${file.name}`);
+            console.log(`📏 Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+            console.log(`☁️ Usar Cloud: ${shouldUseCloud ? 'Sí' : 'No (local)'}`);
+            
+            setMediaFile({
+                file,
+                name: file.name,
+                url: URL.createObjectURL(file),
+                type: mediaType,
+                useCloud: shouldUseCloud,
+            });
+            setActiveTab('analysis');
+            setSelectedHistoryItem(null);
+        } else {
+            setMediaFile(null);
+            setActiveTab('creative');
+        }
+    };
 
-    if (metadata.shouldUseServerProcessing) {
-      setStatus('Uploading to Cloud Storage...');
-      try {
-        await uploadAndProcess(file);
-        setStatus('Cloud processing completed');
-      } catch (err: any) {
-        setStatus(`Error: ${err.message}`);
-      }
-    } else {
-      setStatus('Processing locally with FFmpeg...');
-      // Aquí puedes agregar lógica de procesamiento local
-      setStatus('Local processing completed');
-    }
-  };
+    const addToHistory = (item: Omit<HistoryItem, 'id' | 'timestamp'>) => {
+        const newHistoryItem: HistoryItem = {
+            ...item,
+            id: new Date().toISOString() + Math.random(),
+            timestamp: new Date(),
+        };
+        setHistory(prev => [newHistoryItem, ...prev]);
+        setSelectedHistoryItem(newHistoryItem);
+    };
 
-  return (
-    <main className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-3xl font-bold mb-6">Media Enhancer</h1>
+    const handleAnalysisComplete = (result: AnalysisResult) => {
+        if (mediaFile) {
+            addToHistory({
+                type: 'analysis',
+                mediaType: mediaFile.type,
+                payload: result,
+                mediaFile: mediaFile,
+            });
+        }
+    };
 
-      <FileUploader onFileSelected={handleFileSelect} maxSize={6 * 1024 * 1024 * 1024} />
+    const handleStoryboardComplete = (result: StoryboardFrame[]) => {
+        if (mediaFile) {
+            addToHistory({
+                type: 'storyboard',
+                mediaType: mediaFile.type,
+                payload: result,
+                mediaFile: mediaFile,
+            });
+        }
+    };
 
-      {status && (
-        <div className="mt-4 p-3 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300">
-          {status}
+    const handleEnhancementComplete = (result: EnhancementResult) => {
+        if (mediaFile) {
+            addToHistory({
+                type: 'enhancement',
+                mediaType: mediaFile.type,
+                payload: result,
+                mediaFile: mediaFile,
+            });
+        }
+    };
+
+    const handleCreativeComplete = (result: CreativeResult) => {
+        if (mediaFile) {
+            addToHistory({
+                type: 'creative',
+                mediaType: mediaFile.type,
+                payload: result,
+                mediaFile: mediaFile,
+            });
+        }
+    };
+
+    const handleHistoryItemClick = (item: HistoryItem) => {
+        setSelectedHistoryItem(item);
+        setMediaFile(item.mediaFile);
+        
+        // Switch to the appropriate tab based on history item type
+        switch (item.type) {
+            case 'analysis':
+                setActiveTab('analysis');
+                break;
+            case 'enhancement':
+                setActiveTab('enhancement');
+                break;
+            case 'creative':
+            case 'storyboard':
+                setActiveTab('creative');
+                break;
+        }
+    };
+
+    const handleDeleteHistoryItem = (id: string) => {
+        setHistory(prev => prev.filter(item => item.id !== id));
+        if (selectedHistoryItem?.id === id) {
+            setSelectedHistoryItem(null);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+            <Header />
+
+            <div className="flex flex-1 overflow-hidden">
+                <HistorySidebar
+                    history={history}
+                    selectedItem={selectedHistoryItem}
+                    onItemClick={handleHistoryItemClick}
+                    onItemDelete={handleDeleteHistoryItem}
+                />
+
+                <main className="flex-1 p-6 overflow-y-auto">
+                    <div className="max-w-6xl mx-auto space-y-6">
+                        {/* File Upload Section */}
+                        {!mediaFile && (
+                            <div>
+                                <h2 className="text-2xl font-bold mb-4">Sube tu archivo multimedia</h2>
+                                <FileUpload onFileChange={handleFileChange} />
+                            </div>
+                        )}
+
+                        {/* Media Preview and Tools */}
+                        {mediaFile && (
+                            <>
+                                {/* Media Player */}
+                                <div className="bg-gray-800 rounded-lg p-6">
+                                    <div className="mb-4 flex items-center justify-between">
+                                        <h2 className="text-xl font-semibold">{mediaFile.name}</h2>
+                                        <button
+                                            onClick={() => handleFileChange(null)}
+                                            className="text-sm text-gray-400 hover:text-white"
+                                        >
+                                            Cambiar archivo
+                                        </button>
+                                    </div>
+                                    <CustomVideoPlayer url={mediaFile.url} type={mediaFile.type} />
+                                </div>
+
+                                {/* Tabs and Panels */}
+                                <div className="bg-gray-800 rounded-lg overflow-hidden">
+                                    <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+                                    <div className="p-6">
+                                        {activeTab === 'analysis' && (
+                                            <AnalysisPanel
+                                                mediaFile={mediaFile}
+                                                onAnalysisComplete={handleAnalysisComplete}
+                                                onStoryboardComplete={handleStoryboardComplete}
+                                            />
+                                        )}
+
+                                        {activeTab === 'enhancement' && (
+                                            <EnhancementPanel
+                                                mediaFile={mediaFile}
+                                                onEnhancementComplete={handleEnhancementComplete}
+                                            />
+                                        )}
+
+                                        {activeTab === 'creative' && (
+                                            <CreativeToolsPanel
+                                                mediaFile={mediaFile}
+                                                onCreativeComplete={handleCreativeComplete}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </main>
+            </div>
         </div>
-      )}
-
-      {(uploading || processing) && (
-        <div className="mt-4 w-full max-w-md p-4 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="mb-2 flex justify-between text-sm">
-            <span>{uploading ? 'Uploading...' : 'Processing...'}</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="w-full bg-gray-700 h-2 rounded-full">
-            <div
-              className="bg-red-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      {cloudError && (
-        <p className="mt-4 text-sm text-red-400">Error: {cloudError}</p>
-      )}
-
-      {mediaFile && (
-        <section className="mt-8 w-full max-w-3xl space-y-6">
-          <VideoPlayer src={mediaFile.url} />
-          <Timeline />
-          <div className="text-gray-400 text-sm space-y-1">
-            <p><strong>File:</strong> {mediaFile.name}</p>
-            <p><strong>Size:</strong> {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB</p>
-            <p><strong>Resolution:</strong> {mediaFile.metadata.width}x{mediaFile.metadata.height}</p>
-            <p><strong>Duration:</strong> {mediaFile.metadata.duration.toFixed(2)}s</p>
-            <p><strong>Processing:</strong> {mediaFile.metadata.shouldUseServerProcessing ? 'Cloud ☁️' : 'Local 💻'}</p>
-          </div>
-        </section>
-      )}
-    </main>
-  );
+    );
 };
 
 export default App;
