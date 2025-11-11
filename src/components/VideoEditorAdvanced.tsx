@@ -262,22 +262,26 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Video Player */}
-      <div className="bg-gray-950 rounded-lg overflow-hidden">
-        <video
-          ref={videoRef}
-          controls
-          className="w-full max-h-[400px] object-contain"
-          src={url}
-          crossOrigin="anonymous"
-        >
-          <source src={url} type={type === 'video' ? 'video/mp4' : 'audio/mpeg'} />
-          Tu navegador no soporta el elemento de video.
-        </video>
-      </div>
+      {/* Main Layout: Player Left, Controls Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left: Video Player (2/3) */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Video Player */}
+          <div className="bg-gray-950 rounded-lg overflow-hidden">
+            <video
+              ref={videoRef}
+              controls
+              className="w-full max-h-[500px] object-contain"
+              src={url}
+              crossOrigin="anonymous"
+            >
+              <source src={url} type={type === 'video' ? 'video/mp4' : 'audio/mpeg'} />
+              Tu navegador no soporta el elemento de video.
+            </video>
+          </div>
 
-      {/* Timeline with Video and Audio tracks */}
-      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          {/* Timeline with Video and Audio tracks */}
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-gray-400">Timeline</span>
           <span className="text-sm font-mono text-white">
@@ -366,9 +370,12 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           </div>
         </div>
       </div>
+        </div>
 
-      {/* Tabs */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+        {/* Right: Controls (1/3) */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Tabs */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
         <div className="flex border-b border-gray-700">
           <button
             onClick={() => setActiveTab('cut')}
@@ -805,6 +812,8 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
               </div>
             </div>
           )}
+        </div>
+      </div>
         </div>
       </div>
     </div>

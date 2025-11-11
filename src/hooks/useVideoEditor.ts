@@ -48,8 +48,8 @@ export const useVideoEditor = (): UseVideoEditorReturn => {
       }
 
       // Verificar tamaño del archivo
-      if (file.size > 100 * 1024 * 1024) {
-        setError('Archivo muy grande para procesamiento local. Máximo 100MB.');
+      if (file.size > 30 * 1024 * 1024) {
+        setError('Archivo muy grande para procesamiento local. Máximo 30MB.');
         setRendering(false);
         return null;
       }

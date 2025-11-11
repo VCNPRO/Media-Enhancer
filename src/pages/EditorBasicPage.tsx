@@ -2,13 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from '../components/FileUpload';
 import { VideoEditorAdvanced } from '../components/VideoEditorAdvanced';
-import { AnalysisPanel } from '../components/AnalysisPanel';
-import { EnhancementPanel } from '../components/EnhancementPanel';
-import { CreativeToolsPanel } from '../components/CreativeToolsPanel';
-import { Tabs } from '../components/Tabs';
 import { useCloudUpload } from '../hooks/useCloudUpload';
 import { ffmpegUtils } from '../hooks/useFFmpeg';
-import type { MediaFile, AnalysisResult, EnhancementResult, CreativeResult, StoryboardFrame } from '../../types';
+import type { MediaFile } from '../../types';
 
 const getMediaType = (file: File): 'image' | 'video' | 'audio' => {
   if (file.type.startsWith('image/')) return 'image';
@@ -20,7 +16,6 @@ const getMediaType = (file: File): 'image' | 'video' | 'audio' => {
 const EditorBasicPage: React.FC = () => {
   const navigate = useNavigate();
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
-  const [activeTab, setActiveTab] = useState('analysis');
 
   // Hook para procesamiento en la nube
   const { uploading, processing, progress, error: cloudError, uploadAndProcess } = useCloudUpload();
@@ -73,22 +68,6 @@ const EditorBasicPage: React.FC = () => {
     }
   };
 
-  const handleAnalysisComplete = (result: AnalysisResult) => {
-    console.log('✅ Análisis completado:', result);
-  };
-
-  const handleStoryboardComplete = (result: StoryboardFrame[]) => {
-    console.log('✅ Storyboard generado:', result);
-  };
-
-  const handleEnhancementComplete = (result: EnhancementResult) => {
-    console.log('✅ Mejora completada:', result);
-  };
-
-  const handleCreativeComplete = (result: CreativeResult) => {
-    console.log('✅ Creativo completado:', result);
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -132,7 +111,7 @@ const EditorBasicPage: React.FC = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Sube tu video</h2>
             <p className="text-gray-400 mb-6">
-              Archivos hasta 6 GB. Videos grandes se procesarán automáticamente en la nube.
+              Archivos hasta 30 MB se procesan localmente. Videos más grandes se suben a la nube.
             </p>
             <FileUpload onFileChange={handleFileChange} />
           </div>
@@ -184,61 +163,6 @@ const EditorBasicPage: React.FC = () => {
                 file={mediaFile.file}
               />
             </div>
-
-            {/* Tools Tabs */}
-            <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-              <Tabs
-                tabs={[
-                  { id: 'analysis', label: '📊 Análisis' },
-                  { id: 'enhancement', label: '✨ Mejoras' },
-                  { id: 'creative', label: '🎨 Creativas' }
-                ]}
-                activeTab={activeTab}
-                onTabClick={setActiveTab}
-              />
-
-              <div className="p-6">
-                {activeTab === 'analysis' && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Análisis con IA</h3>
-                    <p className="text-gray-400 mb-4">
-                      Analiza tu video con inteligencia artificial de Gemini para obtener descripciones, transcripciones y más.
-                    </p>
-                    <AnalysisPanel
-                      mediaFile={mediaFile}
-                      onAnalysisComplete={handleAnalysisComplete}
-                      onStoryboardComplete={handleStoryboardComplete}
-                    />
-                  </div>
-                )}
-
-                {activeTab === 'enhancement' && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Mejoras</h3>
-                    <p className="text-gray-400 mb-4">
-                      Mejora la calidad de tus videos e imágenes con herramientas de IA.
-                    </p>
-                    <EnhancementPanel
-                      mediaFile={mediaFile}
-                      onEnhancementComplete={handleEnhancementComplete}
-                    />
-                  </div>
-                )}
-
-                {activeTab === 'creative' && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Herramientas Creativas</h3>
-                    <p className="text-gray-400 mb-4">
-                      Genera contenido creativo a partir de tus videos con IA.
-                    </p>
-                    <CreativeToolsPanel
-                      mediaFile={mediaFile}
-                      onCreativeComplete={handleCreativeComplete}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
@@ -249,7 +173,11 @@ const EditorBasicPage: React.FC = () => {
             <ul className="space-y-2 text-gray-400">
               <li className="flex items-start gap-2">
                 <span className="text-green-500 mt-1">✓</span>
-                <span>Videos de hasta 6 GB se procesan automáticamente en la nube</span>
+                <span>Videos hasta 30 MB se procesan localmente en tu navegador</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-500 mt-1">✓</span>
+                <span>Videos mayores a 30 MB se suben a la nube automáticamente</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-green-500 mt-1">✓</span>

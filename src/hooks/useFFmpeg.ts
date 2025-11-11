@@ -182,8 +182,8 @@ export const ffmpegUtils = {
   },
 
   shouldUseServerProcessing: async (file: File): Promise<boolean> => {
-    const MAX_CLIENT_SIZE = 50 * 1024 * 1024;
-    
+    const MAX_CLIENT_SIZE = 30 * 1024 * 1024;
+
     if (file.size > MAX_CLIENT_SIZE) {
       return true;
     }
