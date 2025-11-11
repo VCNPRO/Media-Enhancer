@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import PlanSelector from './pages/PlanSelector';
 import { DashboardBasic } from './pages/DashboardBasic';
 import { DashboardPro } from './pages/DashboardPro';
+import EditorBasicPage from './pages/EditorBasicPage';
 
 const App: React.FC = () => {
   return (
@@ -20,6 +21,9 @@ const App: React.FC = () => {
 
         {/* Dashboard Pro (Plan Premium & Professional) */}
         <Route path="/dashboard/pro" element={<DashboardPro />} />
+
+        {/* Editor Basic */}
+        <Route path="/editor/basic" element={<EditorBasicPage />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

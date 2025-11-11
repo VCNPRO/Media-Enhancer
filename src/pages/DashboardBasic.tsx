@@ -134,9 +134,9 @@ export const DashboardBasic: React.FC = () => {
           </h2>
 
           <div className="grid md:grid-cols-4 gap-4">
-            {/* Nuevo Video */}
+            {/* Editar Video */}
             <Link
-              to="/editor/new"
+              to="/editor/basic"
               className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 p-6 rounded-xl text-center transition group"
             >
               <div className="text-5xl mb-3 group-hover:scale-110 transition">
@@ -197,7 +197,7 @@ export const DashboardBasic: React.FC = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Mis Videos</h2>
             <Link
-              to="/editor/new"
+              to="/editor/basic"
               className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
             >
               + Nuevo Video
@@ -211,7 +211,7 @@ export const DashboardBasic: React.FC = () => {
                 Aún no tienes videos. ¡Empieza a editar!
               </p>
               <Link
-                to="/editor/new"
+                to="/editor/basic"
                 className="inline-block px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
               >
                 Subir Primer Video
