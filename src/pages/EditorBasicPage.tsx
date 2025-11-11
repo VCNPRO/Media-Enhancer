@@ -34,10 +34,13 @@ const EditorBasicPage: React.FC = () => {
       console.log(`📏 Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
       console.log(`☁️ Usar Cloud: ${shouldUseCloud ? 'Sí' : 'No (local)'}`);
 
+      // Crear URL temporal local primero
+      const localUrl = URL.createObjectURL(file);
+
       setMediaFile({
         file,
         name: file.name,
-        url: URL.createObjectURL(file),
+        url: localUrl,
         type: mediaType,
         useCloud: shouldUseCloud,
       });
@@ -46,8 +49,21 @@ const EditorBasicPage: React.FC = () => {
       if (shouldUseCloud) {
         try {
           console.log('🚀 Subiendo archivo a la nube...');
-          await uploadAndProcess(file);
-          console.log('✅ Archivo subido y procesado en la nube');
+          const cloudUrl = await uploadAndProcess(file);
+
+          if (cloudUrl) {
+            console.log('✅ Archivo subido y procesado en la nube');
+            console.log('🔗 URL de la nube:', cloudUrl);
+
+            // Actualizar el mediaFile con la URL de la nube
+            setMediaFile(prev => prev ? {
+              ...prev,
+              url: cloudUrl // Usar URL de Cloud Storage en lugar de blob local
+            } : null);
+
+            // Liberar la URL local del blob
+            URL.revokeObjectURL(localUrl);
+          }
         } catch (error) {
           console.error('❌ Error al subir archivo:', error);
         }
