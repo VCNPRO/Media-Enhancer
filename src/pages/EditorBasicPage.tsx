@@ -166,7 +166,15 @@ const EditorBasicPage: React.FC = () => {
 
             {/* Tools Tabs */}
             <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-              <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
+              <Tabs
+                tabs={[
+                  { id: 'analysis', label: '📊 Análisis' },
+                  { id: 'enhancement', label: '✨ Mejoras' },
+                  { id: 'creative', label: '🎨 Creativas' }
+                ]}
+                activeTab={activeTab}
+                onTabClick={setActiveTab}
+              />
 
               <div className="p-6">
                 {activeTab === 'analysis' && (
