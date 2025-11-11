@@ -40,6 +40,20 @@ export const useVideoEditor = (): UseVideoEditorReturn => {
       setProgress(0);
       setError(null);
 
+      // Verificar si es una URL de Cloud Storage
+      if (typeof file === 'string') {
+        setError('Los archivos grandes en la nube deben procesarse en el servidor. Por ahora, usa archivos menores a 100MB.');
+        setRendering(false);
+        return null;
+      }
+
+      // Verificar tamaño del archivo
+      if (file.size > 100 * 1024 * 1024) {
+        setError('Archivo muy grande para procesamiento local. Máximo 100MB.');
+        setRendering(false);
+        return null;
+      }
+
       // Cargar FFmpeg si no está cargado
       if (!ffmpeg.loaded) {
         console.log('🔄 Cargando FFmpeg...');
@@ -53,15 +67,7 @@ export const useVideoEditor = (): UseVideoEditorReturn => {
 
       // Escribir el archivo de entrada
       const inputFileName = 'input.mp4';
-      if (typeof file === 'string') {
-        // Si es una URL, descargar el archivo
-        console.log('🌐 Descargando archivo desde URL...');
-        const response = await fetch(file);
-        const blob = await response.blob();
-        await ffmpeg.writeFile(inputFileName, blob);
-      } else {
-        await ffmpeg.writeFile(inputFileName, file);
-      }
+      await ffmpeg.writeFile(inputFileName, file);
 
       setProgress(25);
 

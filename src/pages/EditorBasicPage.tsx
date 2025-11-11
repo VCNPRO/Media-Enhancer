@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from '../components/FileUpload';
-import { VideoEditor } from '../components/VideoEditor';
+import { VideoEditorAdvanced } from '../components/VideoEditorAdvanced';
 import { AnalysisPanel } from '../components/AnalysisPanel';
 import { EnhancementPanel } from '../components/EnhancementPanel';
 import { CreativeToolsPanel } from '../components/CreativeToolsPanel';
@@ -177,7 +177,7 @@ const EditorBasicPage: React.FC = () => {
                   Cambiar archivo
                 </button>
               </div>
-              <VideoEditor
+              <VideoEditorAdvanced
                 url={mediaFile.url}
                 type={mediaFile.type}
                 fileName={mediaFile.name}
