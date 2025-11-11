@@ -21,7 +21,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/plans')}
               className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold transition-colors"
             >
-              Empezar Gratis
+              Empezar
             </button>
           </div>
         </div>
@@ -30,7 +30,7 @@ const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-20 text-center">
         <div className="inline-block mb-8 px-4 py-2 border border-red-900 bg-red-900/20 rounded-full text-sm">
-          ✨ Editor de Video en tu Navegador
+          ✨ Editor de Video
         </div>
 
         <h1 className="text-6xl font-bold mb-6">
@@ -52,42 +52,6 @@ const LandingPage: React.FC = () => {
           >
             Empezar Ahora →
           </button>
-          <button className="border border-gray-700 hover:border-gray-600 px-8 py-4 rounded-lg font-semibold text-lg transition-colors">
-            Ver Funciones
-          </button>
-        </div>
-      </section>
-
-      {/* Preview Section */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-12 border border-gray-700">
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="text-6xl mb-6">📼</div>
-            <h3 className="text-2xl font-semibold mb-2">Preview del Editor</h3>
-            <p className="text-gray-400">Procesamiento en tiempo real en tu navegador</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-4 gap-6 text-center">
-          <div>
-            <div className="text-4xl font-bold mb-2 text-orange-500">100%</div>
-            <div className="text-gray-400">En el Navegador</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2 text-pink-500">0€</div>
-            <div className="text-gray-400">Plan Gratis</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2 text-purple-500">Privado</div>
-            <div className="text-gray-400">Tus videos no se suben</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-2 text-blue-500">Rápido</div>
-            <div className="text-gray-400">Sin esperas</div>
-          </div>
         </div>
       </section>
 
