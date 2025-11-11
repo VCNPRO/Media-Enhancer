@@ -62,7 +62,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({ url, type 
             <video
                 key={url}
                 controls
-                className="w-full max-h-[600px] object-contain rounded-lg"
+                className="w-full max-h-[400px] object-contain rounded-lg"
                 src={url}
                 crossOrigin="anonymous"
             >

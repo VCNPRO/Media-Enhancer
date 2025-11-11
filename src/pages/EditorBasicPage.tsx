@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from '../components/FileUpload';
-import { CustomVideoPlayer } from '../components/CustomVideoPlayer';
+import { VideoEditor } from '../components/VideoEditor';
 import { AnalysisPanel } from '../components/AnalysisPanel';
 import { EnhancementPanel } from '../components/EnhancementPanel';
 import { CreativeToolsPanel } from '../components/CreativeToolsPanel';
@@ -166,10 +166,10 @@ const EditorBasicPage: React.FC = () => {
         {/* Media Preview and Tools */}
         {mediaFile && (
           <div className="space-y-6">
-            {/* Video Player */}
+            {/* Video Editor */}
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-semibold">Preview</h3>
+                <h3 className="text-xl font-semibold">Editor de Video</h3>
                 <button
                   onClick={() => handleFileChange(null)}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
@@ -177,7 +177,12 @@ const EditorBasicPage: React.FC = () => {
                   Cambiar archivo
                 </button>
               </div>
-              <CustomVideoPlayer url={mediaFile.url} type={mediaFile.type} />
+              <VideoEditor
+                url={mediaFile.url}
+                type={mediaFile.type}
+                fileName={mediaFile.name}
+                file={mediaFile.file}
+              />
             </div>
 
             {/* Tools Tabs */}
