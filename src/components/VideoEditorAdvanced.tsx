@@ -271,7 +271,7 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
             <video
               ref={videoRef}
               controls
-              className="w-full max-h-[500px] object-contain"
+              className="w-full max-h-[300px] object-contain"
               src={url}
               crossOrigin="anonymous"
             >
@@ -281,10 +281,10 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           </div>
 
           {/* Timeline with Video and Audio tracks */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-gray-400">Timeline</span>
-          <span className="text-sm font-mono text-white">
+          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-400">Timeline</span>
+          <span className="text-xs font-mono text-white">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
         </div>
