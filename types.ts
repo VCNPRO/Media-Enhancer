@@ -5,6 +5,7 @@ export interface MediaFile {
     name: string;
     url: string;
     type: MediaType;
+    useCloud?: boolean;
 }
 
 export interface AnalysisResult {
