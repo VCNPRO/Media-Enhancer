@@ -81,6 +81,12 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
   const handleFileChange = async (file: File | null) => {
     if (file) {
+      // Hard-coded check to prevent loading files too large for the local-only editor hook
+      if (file.size > 30 * 1024 * 1024) {
+        alert('Este archivo es demasiado grande (máx 30MB) para el procesamiento en el navegador. La edición de archivos grandes en la nube aún no está implementada.');
+        return;
+      }
+
       const mediaType = getMediaType(file);
       const shouldUseCloud = ffmpegUtils.shouldUseServerProcessing(file.size);
       const localUrl = URL.createObjectURL(file);
@@ -93,6 +99,8 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
         useCloud: shouldUseCloud,
       });
 
+      // This part of the logic is currently a dead-end, as the editor hook doesn't support cloud URLs.
+      // The check above prevents this from being used for now.
       if (shouldUseCloud) {
         try {
           const cloudUrl = await uploadAndProcess(file);
