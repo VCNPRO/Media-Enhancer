@@ -247,6 +247,9 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
               <span className="text-xs text-gray-400">Timeline</span>
               <span className="text-xs font-mono text-white">
                 {formatTime(currentTime)} / {formatTime(duration)}
+                {segments.length > 0 && (
+                  <span className="ml-2 text-gray-500">(Final: {formatTime(segments.reduce((acc, seg) => acc + seg.duration, 0))})</span>
+                )}
               </span>
             </div>
             <div className="mb-2">
