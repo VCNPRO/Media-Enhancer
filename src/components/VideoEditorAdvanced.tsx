@@ -190,10 +190,23 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
   const removeTitle = (id: string) => setTitles(titles.filter((title) => title.id !== id));
 
   const renderVideo = async () => {
-    if (!mediaFile || segments.length === 0) return alert('Agrega al menos un segmento para renderizar');
+    if (!mediaFile) return alert('Por favor, carga un archivo de video primero.');
+
+    let segmentsToRender = segments;
+    if (segments.length === 0) {
+      // If no segments are defined, render the entire video
+      segmentsToRender = [{
+        id: 'full-video',
+        start: 0,
+        end: duration,
+        duration: duration,
+      }];
+      alert('No se detectaron segmentos. Se renderizará el video completo.');
+    }
+
     const videoSource = mediaFile.file || mediaFile.url;
     try {
-      const resultUrl = await renderSegments(videoSource, segments, mediaFile.name);
+      const resultUrl = await renderSegments(videoSource, segmentsToRender, mediaFile.name);
       if (resultUrl) {
         setRenderedUrl(resultUrl);
         if (onRenderComplete) onRenderComplete(resultUrl);
@@ -329,10 +342,9 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
             <div className="space-y-2">
               <div>
                 <h4 className="text-xs font-bold mb-1">Renderizar</h4>
-                <button onClick={renderVideo} disabled={segments.length === 0 || rendering || !mediaFile} className="w-full px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-xs transition flex items-center justify-center gap-1.5">
-                  {rendering ? '⚙️ Renderizando...' : '🎬 Renderizar'}
-                </button>
-              </div>
+                            <button onClick={renderVideo} disabled={rendering || !mediaFile} className="w-full px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-xs transition flex items-center justify-center gap-1.5">
+                              {rendering ? '⚙️ Renderizando...' : '🎬 Renderizar'}
+                            </button>              </div>
               {renderedUrl && !rendering && (
                 <div className="p-2 bg-green-900/20 border border-green-500 rounded">
                   <a href={renderedUrl} download={mediaFile ? `edited_${mediaFile.name}`: 'edited_video.mp4'} className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"><span>⬇️</span> Descargar</a>
