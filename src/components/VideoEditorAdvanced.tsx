@@ -1,5 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useVideoEditor } from '../hooks/useVideoEditor';
+import { useCloudUpload } from '../hooks/useCloudUpload';
+import { ffmpegUtils } from '../hooks/useFFmpeg';
+import type { MediaFile } from '../../types';
+import { FileUpload } from './FileUpload';
 
 interface VideoSegment {
   id: string;
@@ -30,20 +34,22 @@ interface TitleOverlay {
 }
 
 interface VideoEditorAdvancedProps {
-  url: string;
-  type: string;
-  fileName: string;
-  file?: File;
   onRenderComplete?: (url: string) => void;
 }
 
+const getMediaType = (file: File): 'image' | 'video' | 'audio' => {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('video/')) return 'video';
+  if (file.type.startsWith('audio/')) return 'audio';
+  return 'video';
+};
+
 export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
-  url,
-  type,
-  fileName,
-  file,
   onRenderComplete,
 }) => {
+  const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
+  const { uploading, processing, progress, error: cloudError, uploadAndProcess } = useCloudUpload();
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
   const { rendering, progress: renderProgress, error: renderError, renderSegments } = useVideoEditor();
@@ -72,18 +78,56 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
     backgroundColor: 'rgba(0,0,0,0.7)',
   });
 
+  const handleFileChange = async (file: File | null) => {
+    if (file) {
+      const mediaType = getMediaType(file);
+      const shouldUseCloud = ffmpegUtils.shouldUseServerProcessing(file.size);
+
+      console.log(`📦 Archivo: ${file.name}`);
+      console.log(`📏 Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`☁️ Usar Cloud: ${shouldUseCloud ? 'Sí' : 'No (local)'}`);
+
+      const localUrl = URL.createObjectURL(file);
+
+      setMediaFile({
+        file,
+        name: file.name,
+        url: localUrl,
+        type: mediaType,
+        useCloud: shouldUseCloud,
+      });
+
+      if (shouldUseCloud) {
+        try {
+          console.log('🚀 Subiendo archivo a la nube...');
+          const cloudUrl = await uploadAndProcess(file);
+
+          if (cloudUrl) {
+            console.log('✅ Archivo subido y procesado en la nube');
+            console.log('🔗 URL de la nube:', cloudUrl);
+
+            setMediaFile(prev => prev ? {
+              ...prev,
+              url: cloudUrl
+            } : null);
+
+            URL.revokeObjectURL(localUrl);
+          }
+        } catch (error) {
+          console.error('❌ Error al subir archivo:', error);
+        }
+      }
+    } else {
+      setMediaFile(null);
+    }
+  };
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleLoadedMetadata = () => {
-      setDuration(video.duration);
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-    };
-
+    const handleLoadedMetadata = () => setDuration(video.duration);
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
@@ -98,7 +142,7 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [mediaFile]);
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -111,65 +155,48 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const setMarkStart = () => {
-    setStartMark(currentTime);
-  };
-
-  const setMarkEnd = () => {
-    setEndMark(currentTime);
-  };
+  const setMarkStart = () => setStartMark(currentTime);
+  const setMarkEnd = () => setEndMark(currentTime);
 
   const addSegment = () => {
     if (startMark === null || endMark === null) {
       alert('Por favor marca el inicio y fin del segmento');
       return;
     }
-
     if (startMark >= endMark) {
       alert('El inicio debe ser menor que el fin');
       return;
     }
-
     const newSegment: VideoSegment = {
       id: Date.now().toString(),
       start: startMark,
       end: endMark,
       duration: endMark - startMark,
     };
-
     setSegments([...segments, newSegment]);
     setStartMark(null);
     setEndMark(null);
   };
 
-  const removeSegment = (id: string) => {
-    setSegments(segments.filter((seg) => seg.id !== id));
-  };
-
+  const removeSegment = (id: string) => setSegments(segments.filter((seg) => seg.id !== id));
   const clearMarks = () => {
     setStartMark(null);
     setEndMark(null);
   };
 
   const seekTo = (time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
+    if (videoRef.current) videoRef.current.currentTime = time;
   };
 
-  // Audio functions
   const handleAudioFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('audio/')) {
       alert('Por favor selecciona un archivo de audio');
       return;
     }
-
     const audioUrl = URL.createObjectURL(file);
     const audio = new Audio(audioUrl);
-
     audio.onloadedmetadata = () => {
       const newAudioTrack: AudioTrack = {
         id: Date.now().toString(),
@@ -180,16 +207,12 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
         duration: audio.duration,
         volume: 1.0,
       };
-
       setAudioTracks([...audioTracks, newAudioTrack]);
     };
   };
 
-  const removeAudioTrack = (id: string) => {
-    setAudioTracks(audioTracks.filter((track) => track.id !== id));
-  };
+  const removeAudioTrack = (id: string) => setAudioTracks(audioTracks.filter((track) => track.id !== id));
 
-  // Title functions
   const openTitleEditor = () => {
     setCurrentTitle({
       id: Date.now().toString(),
@@ -209,47 +232,28 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
       alert('Escribe un texto para el título');
       return;
     }
-
     setTitles([...titles, currentTitle]);
     setShowTitleEditor(false);
-    setCurrentTitle({
-      id: '',
-      text: '',
-      start: 0,
-      duration: 3,
-      fontSize: 48,
-      color: '#FFFFFF',
-      position: 'bottom',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-    });
   };
 
-  const removeTitle = (id: string) => {
-    setTitles(titles.filter((title) => title.id !== id));
-  };
+  const removeTitle = (id: string) => setTitles(titles.filter((title) => title.id !== id));
 
   const renderVideo = async () => {
-    if (segments.length === 0) {
+    if (!mediaFile || segments.length === 0) {
       alert('Agrega al menos un segmento para renderizar');
       return;
     }
-
     console.log('🎬 Renderizando con:');
     console.log('- Segmentos:', segments);
     console.log('- Audio tracks:', audioTracks);
     console.log('- Títulos:', titles);
-
-    const videoSource = file || url;
-
+    const videoSource = mediaFile.file || mediaFile.url;
     try {
-      const resultUrl = await renderSegments(videoSource, segments, fileName);
-
+      const resultUrl = await renderSegments(videoSource, segments, mediaFile.name);
       if (resultUrl) {
         console.log('✅ Video renderizado exitosamente:', resultUrl);
         setRenderedUrl(resultUrl);
-        if (onRenderComplete) {
-          onRenderComplete(resultUrl);
-        }
+        if (onRenderComplete) onRenderComplete(resultUrl);
         alert('¡Video renderizado exitosamente! Puedes descargarlo ahora.');
       } else {
         alert('Error al renderizar el video. Revisa la consola para más detalles.');
@@ -260,8 +264,62 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
     }
   };
 
+  if (!mediaFile) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Sube tu video</h2>
+          <p className="text-gray-400 mb-6">
+            Archivos hasta 30 MB se procesan localmente. Videos más grandes se suben a la nube.
+          </p>
+          <FileUpload onFileChange={handleFileChange} />
+        </div>
+        {(uploading || processing) && (
+          <div className="mb-8 p-6 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="mb-3 flex justify-between items-center">
+              <span className="font-semibold">
+                {uploading ? '📤 Subiendo a la nube...' : '⚙️ Procesando...'}
+              </span>
+              <span className="text-sm text-gray-400">{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {cloudError && (
+          <div className="mb-8 p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-400">
+            ❌ Error: {cloudError}
+          </div>
+        )}
+        <div className="mt-12 bg-gray-800 rounded-lg p-8 border border-gray-700">
+          <h3 className="text-xl font-bold mb-4">💡 Consejos para mejores resultados</h3>
+          <ul className="space-y-2 text-gray-400">
+            <li className="flex items-start gap-2"><span className="text-green-500 mt-1">✓</span><span>Videos hasta 30 MB se procesan localmente en tu navegador</span></li>
+            <li className="flex items-start gap-2"><span className="text-green-500 mt-1">✓</span><span>Videos mayores a 30 MB se suben a la nube automáticamente</span></li>
+            <li className="flex items-start gap-2"><span className="text-green-500 mt-1">✓</span><span>Formatos soportados: MP4, AVI, MOV, MKV, WebM</span></li>
+            <li className="flex items-start gap-2"><span className="text-green-500 mt-1">✓</span><span>Optimizado para videos VHS (720x576 PAL)</span></li>
+            <li className="flex items-start gap-2"><span className="text-green-500 mt-1">✓</span><span>Análisis con IA incluido: descripciones, transcripciones y más</span></li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+        <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xl font-semibold">Editor de Video</h3>
+            <button
+                onClick={() => handleFileChange(null)}
+                className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
+                Cambiar archivo
+            </button>
+        </div>
       {/* Main Layout: Player Left, Controls Right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Video Player (2/3) */}
@@ -272,10 +330,10 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
               ref={videoRef}
               controls
               className="w-full max-h-[300px] object-contain"
-              src={url}
+              src={mediaFile.url}
               crossOrigin="anonymous"
             >
-              <source src={url} type={type === 'video' ? 'video/mp4' : 'audio/mpeg'} />
+              <source src={mediaFile.url} type={mediaFile.type === 'video' ? 'video/mp4' : 'audio/mpeg'} />
               Tu navegador no soporta el elemento de video.
             </video>
           </div>
@@ -787,7 +845,7 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
               </div>
               <a
                 href={renderedUrl}
-                download={`edited_${fileName}`}
+                download={mediaFile ? `edited_${mediaFile.name}`: 'edited_video.mp4'}
                 className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"
               >
                 <span>⬇️</span>
