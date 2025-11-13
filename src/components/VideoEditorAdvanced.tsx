@@ -208,9 +208,14 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
       alert('No se detectaron segmentos. Se renderizará el video completo.');
     }
 
-    const videoSource = mediaFile.file || mediaFile.url;
+    // El backend necesita una URL válida, no un objeto File
+    const videoUrl = mediaFile.url;
+    if (!videoUrl) {
+      return alert('Error: El video no se ha subido correctamente. No hay URL disponible.');
+    }
+
     try {
-      const resultUrl = await renderSegments(videoSource, segmentsToRender, mediaFile.name);
+      const resultUrl = await renderSegments(videoUrl, segmentsToRender, mediaFile.name);
       if (resultUrl) {
         setRenderedUrl(resultUrl);
         if (onRenderComplete) onRenderComplete(resultUrl);
