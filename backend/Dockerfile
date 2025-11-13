@@ -11,13 +11,13 @@ COPY package*.json ./
 # Instalar dependencias
 RUN npm ci --only=production
 
-# Copiar código fuente
-COPY server.js ./
-COPY cors.json ./
+# Copiar todo el código fuente y compilar TypeScript
+COPY . .
+RUN npm run build
 
 # Crear directorio temporal
 RUN mkdir -p /tmp/uploads
 
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]

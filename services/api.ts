@@ -3,47 +3,29 @@
 console.log(' Usando BACKEND_URL:', BACKEND_URL);
 
 export const uploadVideo = async (file: File): Promise<string> => {
-  console.log(' Solicitando URL firmada para:', file.name);
+  console.log(' Subiendo archivo a Cloud Storage a través del backend...');
 
-  const res = await fetch(
-    `${BACKEND_URL}/api/generate-upload-url`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fileName: file.name, contentType: file.type }),
-    }
-  );
+  const formData = new FormData();
+  formData.append('file', file);
 
-  if (!res.ok) {
-    throw new Error('Error obteniendo URL firmada');
-  }
-
-  const { uploadUrl, fileName: uniqueFileName } = await res.json();
-
-  console.log(' Subiendo archivo directamente a Cloud Storage...');
-
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': file.type
-    },
-    body: file
+  const res = await fetch(`${BACKEND_URL}/api/media/upload`, {
+    method: 'POST',
+    body: formData,
   });
 
-  if (!uploadRes.ok) {
-    throw new Error('Error subiendo archivo a Cloud Storage');
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error?.message || 'Error al subir el video');
   }
 
-  const publicUrl = `https://storage.googleapis.com/${import.meta.env.VITE_GOOGLE_CLOUD_BUCKET}/${uniqueFileName}`;
+  const { data } = await res.json();
+  console.log(' Archivo subido exitosamente:', data.url);
 
-  console.log(' Archivo subido exitosamente:', publicUrl);
-
-  return publicUrl;
+  return data.url;
 };
 
 export const startRenderJob = async (videoUrl: string, segments: { start: number; end: number }[]): Promise<{ jobId: string }> => {
-  const res = await fetch(`${BACKEND_URL}/api/render`, {
+  const res = await fetch(`${BACKEND_URL}/api/media/render`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -52,18 +34,22 @@ export const startRenderJob = async (videoUrl: string, segments: { start: number
   });
 
   if (!res.ok) {
-    throw new Error('Error al iniciar el trabajo de renderizado');
+    const errorData = await res.json();
+    throw new Error(errorData.error?.message || 'Error al iniciar el trabajo de renderizado');
   }
 
-  return res.json();
+  const { data } = await res.json();
+  return data;
 };
 
 export const getRenderJobStatus = async (jobId: string): Promise<{ status: string; progress: number; finalUrl: string | null }> => {
-  const res = await fetch(`${BACKEND_URL}/api/render/status/${jobId}`);
+  const res = await fetch(`${BACKEND_URL}/api/media/render/status/${jobId}`);
 
   if (!res.ok) {
-    throw new Error('Error al obtener el estado del trabajo de renderizado');
+    const errorData = await res.json();
+    throw new Error(errorData.error?.message || 'Error al obtener el estado del trabajo de renderizado');
   }
 
-  return res.json();
+  const { data } = await res.json();
+  return data;
 };

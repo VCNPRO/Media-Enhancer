@@ -4,9 +4,8 @@
   "description": "Backend API para procesamiento de video con FFmpeg",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "echo 'No build step required for this JavaScript backend.'"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "keywords": [
     "ffmpeg",

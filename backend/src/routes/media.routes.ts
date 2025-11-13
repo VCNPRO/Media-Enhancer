@@ -32,6 +32,39 @@ if (process.env.DISABLE_AUTH !== 'true') {
   console.warn('⚠️ WARNING: Authentication is DISABLED. This is only for testing!');
 }
 
+// Endpoint para generar URL firmada para subida directa a R2
+router.post(
+  '/generate-upload-url',
+  validate([
+    body('fileName').notEmpty().withMessage('fileName is required'),
+    body('contentType').notEmpty().withMessage('contentType is required'),
+  ]),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.auth?.userId; // Opcional, dependiendo de si quieres atar esto a un usuario
+      const { fileName, contentType } = req.body;
+
+      if (!r2Service.isConfigured()) {
+        return res.status(500).json({ success: false, error: { message: 'R2 service not configured' } });
+      }
+
+      const uniqueFileName = r2Service.generateKey(userId || 'anonymous', fileName);
+      const uploadUrl = await r2Service.getSignedUrl(uniqueFileName, 15 * 60); // 15 minutos de expiración para subida
+
+      res.json({
+        success: true,
+        data: {
+          uploadUrl: uploadUrl,
+          fileName: uniqueFileName, // Clave que se usará para subir el archivo
+        },
+      });
+    } catch (error) {
+      console.error('Error generating upload URL:', error);
+      res.status(500).json({ success: false, error: { message: 'Failed to generate upload URL' } });
+    }
+  }
+);
+
 // Upload media file
 router.post(
   '/upload',
@@ -353,6 +386,60 @@ router.post(
         success: false,
         error: { message: 'Failed to queue enhancement' },
       });
+    }
+  }
+);
+
+// --- Rutas de Renderizado de Video ---
+import renderService from '../services/render.service';
+
+// Endpoint para iniciar un nuevo trabajo de renderizado
+router.post(
+  '/render',
+  validate([
+    body('videoUrl').isURL().withMessage('Valid videoUrl is required'),
+    body('segments').isArray().withMessage('Segments must be an array'),
+    body('segments.*.start').isNumeric().withMessage('Segment start must be a number'),
+    body('segments.*.end').isNumeric().withMessage('Segment end must be a number'),
+  ]),
+  async (req: Request, res: Response) => {
+    try {
+      const { videoUrl, segments } = req.body;
+      const jobId = await renderService.createRenderJob(videoUrl, segments);
+      res.status(202).json({ success: true, data: { jobId } });
+    } catch (error) {
+      console.error('Error starting render job:', error);
+      res.status(500).json({ success: false, error: { message: 'Failed to start render job' } });
+    }
+  }
+);
+
+// Endpoint para consultar el estado de un trabajo de renderizado
+router.get(
+  '/render/status/:jobId',
+  validate([param('jobId').notEmpty().withMessage('Job ID is required')]),
+  async (req: Request, res: Response) => {
+    try {
+      const { jobId } = req.params;
+      const job = renderService.getJobStatus(jobId);
+
+      if (!job) {
+        return res.status(404).json({ success: false, error: { message: 'Job not found' } });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          jobId: job.id,
+          status: job.status,
+          progress: job.progress,
+          finalUrl: job.finalUrl || null,
+          error: job.error || null,
+        },
+      });
+    } catch (error) {
+      console.error('Error getting render job status:', error);
+      res.status(500).json({ success: false, error: { message: 'Failed to get job status' } });
     }
   }
 );
