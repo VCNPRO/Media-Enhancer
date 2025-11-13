@@ -53,6 +53,8 @@ app.use(cors({
     }
   },
   credentials: true,
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Body parsing middleware
