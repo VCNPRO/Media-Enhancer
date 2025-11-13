@@ -1,0 +1,9 @@
+﻿.me-dashboard{ display:flex; min-height: 100vh; color:#fff; background: linear-gradient(180deg,#05060a,#0b1020); }
+.me-sidebar{ width: 220px; padding: 20px; border-right: 1px solid rgba(255,255,255,0.03); background: rgba(255,255,255,0.02); }
+.me-sidebar-brand{ font-weight:700; font-size:18px; margin-bottom:12px; }
+.me-nav{ display:flex; flex-direction:column; gap:10px; }
+.me-nav a{ color: rgba(255,255,255,0.84); text-decoration:none; padding:6px 8px; border-radius:6px; }
+.me-nav a:hover{ background: rgba(255,255,255,0.02); }
+.me-main{ flex:1; padding:20px; }
+.me-main-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.me-main-content{ background: rgba(255,255,255,0.02); padding:16px; border-radius:10px; min-height:400px; }

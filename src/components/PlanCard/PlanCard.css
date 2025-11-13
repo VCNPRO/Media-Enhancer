@@ -1,0 +1,21 @@
+﻿.me-plancard{
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 18px;
+  width: 300px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.me-plancard.highlight{
+  background: linear-gradient(180deg, rgba(168,85,247,0.12), rgba(244,63,94,0.06));
+  transform: translateY(-6px);
+  border: 1px solid rgba(168,85,247,0.22);
+}
+.me-plancard-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.me-plan-price{ font-weight:700; font-size:20px; color:#fff; }
+.me-plan-features{ list-style:none; padding:0; margin:0 0 16px 0; color: rgba(255,255,255,0.8); }
+.me-plan-features li{ padding:6px 0; border-bottom: 1px dashed rgba(255,255,255,0.02); }
+.me-plan-cta{ text-align:center; }

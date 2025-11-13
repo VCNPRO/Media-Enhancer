@@ -1,0 +1,11 @@
+﻿.me-locked{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  padding:10px;
+  background: rgba(255,255,255,0.02);
+  border-radius:8px;
+}
+.me-locked-icon{ font-size:20px; }
+.me-locked-label{ color:#fff; font-weight:600; }
+.me-locked-body{ display:flex; gap:12px; align-items:center; }

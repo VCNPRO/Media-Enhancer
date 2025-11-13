@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import fs from 'fs/promises'; // Usar la versión de promesas de fs
+import fs from 'fs/promises'; // Para operaciones async
+import * as fsSync from 'fs'; // Para createWriteStream
 import ffmpeg from 'fluent-ffmpeg';
 import axios from 'axios';
 import r2Service from './r2.service'; // Importar el servicio R2
@@ -93,11 +94,11 @@ class RenderService {
         responseType: 'stream',
       });
 
-      const writer = fs.createWriteStream(inputFilePath);
+      const writer = fsSync.createWriteStream(inputFilePath);
       response.data.pipe(writer);
 
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
+      await new Promise<void>((resolve, reject) => {
+        writer.on('finish', () => resolve());
         writer.on('error', reject);
       });
 

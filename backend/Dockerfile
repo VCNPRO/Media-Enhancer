@@ -8,12 +8,17 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci --only=production
+# Instalar TODAS las dependencias (incluyendo devDependencies para el build)
+RUN npm ci
 
-# Copiar todo el código fuente y compilar TypeScript
+# Copiar todo el código fuente
 COPY . .
+
+# Compilar TypeScript
 RUN npm run build
+
+# Eliminar devDependencies después del build para reducir tamaño
+RUN npm prune --production
 
 # Crear directorio temporal
 RUN mkdir -p /tmp/uploads

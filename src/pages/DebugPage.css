@@ -1,0 +1,3 @@
+﻿.me-debug-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.me-debug-card{ background: rgba(255,255,255,0.02); padding:16px; border-radius:8px; }
+.me-debug-value{ font-weight:700; color:#fff; margin-top:8px }
