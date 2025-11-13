@@ -8,7 +8,6 @@ import { Tabs } from './components/Tabs';
 import { CustomVideoPlayer } from './components/CustomVideoPlayer';
 import { HistorySidebar } from './components/HistorySidebar';
 import { useCloudUpload } from './src/hooks/useCloudUpload';
-import { ffmpegUtils } from './src/hooks/useFFmpeg';
 import type { MediaFile, AnalysisResult, EnhancementResult, StoryboardFrame, HistoryItem, CreativeResult } from './types';
 
 const getMediaType = (file: File): 'image' | 'video' | 'audio' => {
@@ -31,7 +30,8 @@ const App: React.FC = () => {
     const handleFileChange = async (file: File | null) => {
         if (file) {
             const mediaType = getMediaType(file);
-            const shouldUseCloud = ffmpegUtils.shouldUseServerProcessing(file.size);
+            // Ahora todo el procesamiento de video se hará en la nube
+            const shouldUseCloud = mediaType === 'video'; 
             
             console.log(`📦 Archivo: ${file.name}`);
             console.log(`📏 Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB`);

@@ -190,6 +190,170 @@ app.delete("/api/video/:fileName", async (req, res) => {
   }
 });
 
+// --- Renderizado en Servidor ---
+
+const jobs = {}; // Almacén en memoria para los trabajos de renderizado
+
+// Endpoint para iniciar un nuevo trabajo de renderizado
+app.post("/api/render", async (req, res) => {
+  try {
+    const { videoUrl, segments } = req.body;
+
+    if (!videoUrl || !segments || !Array.isArray(segments)) {
+      return res.status(400).json({ error: "videoUrl and segments are required" });
+    }
+
+    const jobId = `job-${uuidv4()}`;
+    jobs[jobId] = {
+      id: jobId,
+      videoUrl,
+      segments,
+      status: "queued",
+      progress: 0,
+      createdAt: new Date(),
+    };
+
+    // Iniciar el procesamiento en segundo plano (sin esperar)
+    processRenderQueue();
+
+    res.status(202).json({ jobId });
+  } catch (error) {
+    console.error("Error starting render job:", error);
+    res.status(500).json({ error: "Failed to start render job", details: error.message });
+  }
+});
+
+// Endpoint para consultar el estado de un trabajo
+app.get("/api/render/status/:jobId", (req, res) => {
+  const { jobId } = req.params;
+  const job = jobs[jobId];
+
+  if (!job) {
+    return res.status(404).json({ error: "Job not found" });
+  }
+
+  res.json({
+    jobId: job.id,
+    status: job.status,
+    progress: job.progress,
+    finalUrl: job.finalUrl || null,
+  });
+});
+
+// --- Lógica del Trabajador de Renderizado ---
+
+let isProcessing = false;
+
+async function processRenderQueue() {
+  if (isProcessing) {
+    return; // Evitar procesamiento concurrente
+  }
+
+  const job = Object.values(jobs).find((j) => j.status === "queued");
+  if (!job) {
+    return; // No hay trabajos en cola
+  }
+
+  isProcessing = true;
+  job.status = "processing";
+  console.log(`Processing job: ${job.id}`);
+
+  let inputPath = null;
+  const outputFiles = [];
+
+  try {
+    // 1. Descargar el video fuente
+    job.progress = 10;
+    const originalFileName = path.basename(new URL(job.videoUrl).pathname);
+    inputPath = path.join("/tmp", `render-in-${uuidv4()}-${originalFileName}`);
+    
+    const file = bucket.file(decodeURIComponent(originalFileName));
+    await file.download({ destination: inputPath });
+    console.log(`Job ${job.id}: Video downloaded to ${inputPath}`);
+
+    // 2. Cortar los segmentos con FFmpeg
+    job.progress = 30;
+    const segmentPromises = job.segments.map((segment, index) => {
+      return new Promise((resolve, reject) => {
+        const outputSegmentPath = path.join("/tmp", `segment-${job.id}-${index}.mp4`);
+        outputFiles.push(outputSegmentPath);
+
+        ffmpeg(inputPath)
+          .setStartTime(segment.start)
+          .setDuration(segment.end - segment.start)
+          .output(outputSegmentPath)
+          .on("end", () => {
+            console.log(`Job ${job.id}: Segment ${index} created`);
+            resolve(outputSegmentPath);
+          })
+          .on("error", (err) => {
+            console.error(`Job ${job.id}: Error creating segment ${index}`, err);
+            reject(err);
+          })
+          .run();
+      });
+    });
+
+    const processedSegments = await Promise.all(segmentPromises);
+    job.progress = 60;
+
+    // 3. Unir los segmentos
+    const concatFilePath = path.join("/tmp", `concat-${job.id}.txt`);
+    const concatContent = processedSegments.map(p => `file '${p}'`).join('\n');
+    fs.writeFileSync(concatFilePath, concatContent);
+    outputFiles.push(concatFilePath);
+
+    const finalOutputName = `rendered-${job.id}.mp4`;
+    const finalOutputPath = path.join("/tmp", finalOutputName);
+    outputFiles.push(finalOutputPath);
+
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(concatFilePath)
+        .inputOptions(['-f concat', '-safe 0'])
+        .outputOptions(['-c copy']) // Copiar codecs sin re-encodear
+        .output(finalOutputPath)
+        .on("end", () => {
+          console.log(`Job ${job.id}: Segments merged successfully`);
+          resolve();
+        })
+        .on("error", (err) => {
+          console.error(`Job ${job.id}: Error merging segments`, err);
+          reject(err);
+        })
+        .run();
+    });
+    job.progress = 80;
+
+    // 4. Subir el resultado a GCS
+    const destination = `rendered/${finalOutputName}`;
+    await bucket.upload(finalOutputPath, {
+      destination: destination,
+      metadata: { contentType: "video/mp4" },
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${bucketName}/${destination}`;
+    job.finalUrl = publicUrl;
+    job.status = "completed";
+    job.progress = 100;
+    console.log(`Job ${job.id}: Processing complete. Final URL: ${publicUrl}`);
+
+  } catch (error) {
+    console.error(`Job ${job.id}: Failed to process video`, error);
+    job.status = "error";
+    job.error = error.message;
+  } finally {
+    // 5. Limpiar archivos temporales
+    console.log(`Job ${job.id}: Cleaning up temporary files...`);
+    if (inputPath) fs.unlink(inputPath, (err) => err && console.error(`Failed to delete input: ${inputPath}`, err));
+    outputFiles.forEach(f => fs.unlink(f, (err) => err && console.error(`Failed to delete temp file: ${f}`, err)));
+    
+    isProcessing = false;
+    // Intentar procesar el siguiente trabajo en la cola
+    setTimeout(processRenderQueue, 1000); 
+  }
+}
+
 // Crear directorio temporal si no existe
 if (!fs.existsSync("/tmp/uploads")) {
   fs.mkdirSync("/tmp/uploads", { recursive: true });
