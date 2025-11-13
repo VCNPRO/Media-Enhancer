@@ -9,4 +9,4 @@ DEPLOY.md
 service-account-key.json
 *.log
 uploads/
-src/
+dist/
