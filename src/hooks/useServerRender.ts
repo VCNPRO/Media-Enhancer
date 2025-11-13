@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { startRenderJob, getRenderJobStatus } from '../../services/api';
+import { startRenderJob, getRenderJobStatus } from '../services/api';
 
 interface ServerRenderResult {
   jobId: string | null;
