@@ -160,7 +160,10 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
     setEndMark(null);
   };
 
-  const removeSegment = (id: string) => setSegments(segments.filter((seg) => seg.id !== id));
+  const removeSegment = (id: string) => {
+    setSegments(segments.filter((seg) => seg.id !== id));
+    clearMarks(); // Add this line
+  };
   const clearMarks = () => { setStartMark(null); setEndMark(null); };
   const seekTo = (time: number) => { if (videoRef.current) videoRef.current.currentTime = time; };
 
