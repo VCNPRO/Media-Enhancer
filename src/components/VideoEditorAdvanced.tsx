@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useVideoEditor } from '../hooks/useVideoEditor';
 import { useCloudUpload } from '../hooks/useCloudUpload';
-import { ffmpegUtils } from '../hooks/useFFmpeg';
 import type { MediaFile } from '../../types';
 import { FileUpload } from './FileUpload';
 
@@ -81,14 +80,8 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
   const handleFileChange = async (file: File | null) => {
     if (file) {
-      // Hard-coded check to prevent loading files too large for the local-only editor hook
-      if (file.size > 30 * 1024 * 1024) {
-        alert('Este archivo es demasiado grande (máx 30MB) para el procesamiento en el navegador. La edición de archivos grandes en la nube aún no está implementada.');
-        return;
-      }
-
       const mediaType = getMediaType(file);
-      const shouldUseCloud = ffmpegUtils.shouldUseServerProcessing(file.size);
+      const shouldUseCloud = mediaType === 'video'; // Always use cloud for video
       const localUrl = URL.createObjectURL(file);
 
       setMediaFile({
