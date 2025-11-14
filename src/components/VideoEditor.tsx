@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useVideoEditor } from '../hooks/useVideoEditor';
 
+// Force deployment trigger
 interface VideoSegment {
   id: string;
   start: number;
