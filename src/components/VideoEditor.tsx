@@ -143,11 +143,22 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({ url, type, fileName, f
     console.log('📝 Título:', title);
     console.log('🎵 Audio URL:', audioUrl);
 
-    // Determinar la fuente del video (File o URL)
-    const videoSource = file || url;
-
     try {
-      const resultUrl = await renderSegments(videoSource, segments, fileName, title || undefined, audioUrl || undefined);
+      // Si tenemos un File, primero subirlo a Cloud Storage
+      let videoUrlToRender = url;
+
+      if (file && !url) {
+        console.log('📤 Subiendo video a Cloud Storage antes de renderizar...');
+        const { uploadVideo } = await import('../services/api');
+        videoUrlToRender = await uploadVideo(file);
+        console.log('✅ Video subido:', videoUrlToRender);
+      }
+
+      if (!videoUrlToRender) {
+        throw new Error('No se pudo obtener la URL del video');
+      }
+
+      const resultUrl = await renderSegments(videoUrlToRender, segments, fileName, title || undefined, audioUrl || undefined);
 
       if (resultUrl) {
         console.log('✅ Video renderizado exitosamente:', resultUrl);
