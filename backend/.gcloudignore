@@ -1,0 +1,33 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+
+# TypeScript build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+*.md
+README.md
+
+# Test files
+coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+Thumbs.db

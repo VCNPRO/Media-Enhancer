@@ -1,4 +1,4 @@
-﻿FROM node:18
+FROM node:18-slim
 
 # Instalar FFmpeg
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
@@ -8,21 +8,18 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar TODAS las dependencias (incluyendo devDependencies para el build)
-RUN npm ci
+# Instalar solo dependencias de producción
+RUN npm ci --only=production
 
-# Copiar todo el código fuente
-COPY . .
-
-# Compilar TypeScript
-RUN npm run build
-
-# Eliminar devDependencies después del build para reducir tamaño
-RUN npm prune --production
+# Copiar código fuente
+COPY src/ ./src/
 
 # Crear directorio temporal
 RUN mkdir -p /tmp/uploads
 
 EXPOSE 8080
 
-CMD ["node", "dist/server.js"]
+# Variable de entorno para el puerto
+ENV PORT=8080
+
+CMD ["node", "src/server.js"]
