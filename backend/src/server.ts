@@ -35,8 +35,10 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:3000',
   'https://media-enhancer.vercel.app',
-  'https://media-enhancer-c9u2mdv3c-solammedia-9886s-projects.vercel.app',
+  // ✅ Permitir TODOS los subdominios de Vercel
+  /^https:\/\/media-enhancer-.*\.vercel\.app$/,
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -45,17 +47,31 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed as string))) {
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed || origin.startsWith(allowed);
+      }
+      // RegExp check for Vercel subdomains
+      return allowed instanceof RegExp && allowed.test(origin);
+    });
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.warn(`⚠️ CORS blocked request from: ${origin}`);
-      callback(null, true); // Temporalmente permitir todos durante desarrollo
+      // ✅ PERMITIR TODOS en desarrollo/testing
+      callback(null, true);
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   exposedHeaders: ['Content-Length', 'Content-Type'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
+
+// ✅ Handle preflight requests explicitly
+app.options('*', cors());
 
 // Body parsing middleware
 app.use(express.json());
