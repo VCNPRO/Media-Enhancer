@@ -1,6 +1,8 @@
 ﻿const express = require('express');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
+const { createJob, getJob } = require('./renderJobs');
+const { processVideo } = require('./videoProcessor');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -90,20 +92,31 @@ app.post('/api/media/upload', async (req, res) => {
 app.post('/api/media/render', async (req, res) => {
   console.log('Render request received');
   try {
-    const { videoUrl, segments } = req.body;
+    const { videoUrl, segments, title, audioUrl } = req.body;
 
-    if (!videoUrl || !segments) {
-      return res.status(400).json({ error: { message: 'videoUrl and segments are required' } });
+    if (!videoUrl) {
+      return res.status(400).json({ error: { message: 'videoUrl is required' } });
     }
 
     // Generar ID de trabajo único
     const jobId = `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    console.log('Render job created:', jobId, 'for video:', videoUrl);
+    console.log('Render job created:', jobId);
+    console.log('Video:', videoUrl);
     console.log('Segments:', segments);
+    console.log('Title:', title);
+    console.log('Audio:', audioUrl);
 
-    // Por ahora, devolvemos el jobId
-    // En una implementación real, aquí iniciarías el proceso de renderizado con FFmpeg
+    // Crear job en el sistema
+    const job = createJob(jobId, videoUrl, { segments, title, audioUrl });
+
+    // Iniciar procesamiento asíncrono (no bloqueante)
+    processVideo(jobId, videoUrl, { segments, title, audioUrl })
+      .catch(err => {
+        console.error(`Error processing job ${jobId}:`, err);
+      });
+
+    // Devolver jobId inmediatamente
     res.json({
       data: {
         jobId: jobId
@@ -120,13 +133,18 @@ app.get('/api/media/render/status/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
 
-    // Por ahora, simulamos que el trabajo está completo
-    // En una implementación real, aquí verificarías el estado del trabajo de renderizado
+    const job = getJob(jobId);
+
+    if (!job) {
+      return res.status(404).json({ error: { message: 'Job not found' } });
+    }
+
     res.json({
       data: {
-        status: 'completed',
-        progress: 100,
-        finalUrl: null // El procesamiento se hace en el frontend por ahora
+        status: job.status,
+        progress: job.progress,
+        finalUrl: job.finalUrl,
+        error: job.error
       }
     });
   } catch (error) {
