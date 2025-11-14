@@ -14,7 +14,7 @@ const router = Router();
 const upload = multer({
   dest: 'uploads/',
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB
+    fileSize: 6 * 1024 * 1024 * 1024, // 6GB
   },
   fileFilter: (_req, file, cb) => {
     if (isValidMediaMimeType(file.mimetype)) {
@@ -83,7 +83,7 @@ router.post(
       }
 
       // Validar tamaño del archivo
-      const maxSize = 100 * 1024 * 1024; // 100MB
+      const maxSize = 6 * 1024 * 1024 * 1024; // 6GB
       if (file.size > maxSize) {
         // Eliminar archivo temporal
         await fs.unlink(file.path).catch(() => {});
@@ -396,6 +396,8 @@ import renderService from '../services/render.service';
 // Endpoint para iniciar un nuevo trabajo de renderizado
 router.post(
   '/render',
+  // ✅ ARREGLO: Agregar rate limiting para prevenir abuso
+  aiProcessingRateLimiter,
   validate([
     body('videoUrl').isURL().withMessage('Valid videoUrl is required'),
     body('segments').isArray().withMessage('Segments must be an array'),
@@ -405,7 +407,28 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { videoUrl, segments } = req.body;
-      const jobId = await renderService.createRenderJob(videoUrl, segments);
+      const userId = req.auth?.userId;
+
+      // ✅ SEGURIDAD: Validar que la URL es de un dominio permitido (R2)
+      const allowedDomains = [
+        process.env.R2_PUBLIC_URL,
+        'r2.cloudflarestorage.com',
+        // Agregar otros dominios permitidos aquí
+      ].filter(Boolean);
+
+      const urlObj = new URL(videoUrl);
+      const isAllowed = allowedDomains.some(domain =>
+        domain && urlObj.hostname.includes(domain.replace(/^https?:\/\//, ''))
+      );
+
+      if (!isAllowed) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Invalid video URL domain. Only R2 URLs are allowed.' }
+        });
+      }
+
+      const jobId = await renderService.createRenderJob(videoUrl, segments, userId);
       res.status(202).json({ success: true, data: { jobId } });
     } catch (error) {
       console.error('Error starting render job:', error);

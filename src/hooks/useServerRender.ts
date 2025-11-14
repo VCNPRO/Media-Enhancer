@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { startRenderJob, getRenderJobStatus } from '../services/api';
 
 interface ServerRenderResult {
@@ -16,31 +16,57 @@ export const useServerRender = (): ServerRenderResult => {
   const [progress, setProgress] = useState(0);
   const [finalUrl, setFinalUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ ARREGLO: Limpiar interval cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
 
   const startRendering = useCallback(async (videoUrl: string, segments: { start: number; end: number }[]) => {
     try {
+      // Limpiar interval previo si existe
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
       setStatus('queued');
       setError(null);
       const { jobId: newJobId } = await startRenderJob(videoUrl, segments);
       setJobId(newJobId);
-      
-      const interval = setInterval(async () => {
+
+      intervalRef.current = setInterval(async () => {
         try {
           const { status: newStatus, progress: newProgress, finalUrl: newFinalUrl } = await getRenderJobStatus(newJobId);
           setStatus(newStatus);
           setProgress(newProgress);
-  
+
           if (newStatus === 'completed') {
             setFinalUrl(newFinalUrl);
-            clearInterval(interval);
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
           } else if (newStatus === 'error') {
             setError('Rendering job failed');
-            clearInterval(interval);
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
           }
         } catch (err: any) {
           setError(err.message || 'Failed to poll job status');
           setStatus('error');
-          clearInterval(interval);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
         }
       }, 2000);
 

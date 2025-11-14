@@ -16,13 +16,13 @@ app.use(cors({
 }));
 
 // ✅ Aumentar límite de body
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.json({ limit: '6gb' }));
+app.use(express.urlencoded({ limit: '6gb', extended: true }));
 
 // ✅ Configurar multer
 const upload = multer({
   dest: '/tmp/',
-  limits: { fileSize: 100 * 1024 * 1024 }
+  limits: { fileSize: 6 * 1024 * 1024 * 1024 } // 6GB
 });
 
 // ✅ Configurar Google Cloud Storage

@@ -37,7 +37,7 @@ class RenderService {
   }
 
   // Iniciar un nuevo trabajo de renderizado
-  async createRenderJob(videoUrl: string, segments: { start: number; end: number }[]): Promise<string> {
+  async createRenderJob(videoUrl: string, segments: { start: number; end: number }[], userId?: string): Promise<string> {
     const jobId = `job-${uuidv4()}`;
     jobs[jobId] = {
       id: jobId,
@@ -48,6 +48,8 @@ class RenderService {
       createdAt: new Date(),
       finalUrl: null,
     };
+
+    console.log(`Job ${jobId} created by user ${userId || 'anonymous'}`);
 
     // Iniciar el procesamiento en segundo plano (sin esperar)
     this.processRenderQueue();
@@ -87,14 +89,28 @@ class RenderService {
       inputFilePath = path.join(this.tempDir, `render-in-${job.id}-${originalFileName}`);
       tempFiles.push(inputFilePath);
 
-      // Usar axios para descargar el archivo
+      // ✅ SEGURIDAD: Descargar el archivo con límite de tamaño (max 6GB)
+      const maxFileSize = 6 * 1024 * 1024 * 1024; // 6GB
+      let downloadedBytes = 0;
+
       const response = await axios({
         method: 'get',
         url: job.videoUrl,
         responseType: 'stream',
+        timeout: 5 * 60 * 1000, // 5 minutos timeout para descarga
       });
 
       const writer = fsSync.createWriteStream(inputFilePath);
+
+      response.data.on('data', (chunk: Buffer) => {
+        downloadedBytes += chunk.length;
+        if (downloadedBytes > maxFileSize) {
+          writer.destroy();
+          response.data.destroy();
+          throw new Error(`File too large. Maximum size is ${maxFileSize / 1024 / 1024}MB`);
+        }
+      });
+
       response.data.pipe(writer);
 
       await new Promise<void>((resolve, reject) => {
@@ -115,23 +131,29 @@ class RenderService {
         segmentOutputPaths.push(outputSegmentPath);
 
         await new Promise((resolve, reject) => {
+          // ✅ ARREGLO: Agregar timeout de 5 minutos para evitar cuelgues
+          const timeout = setTimeout(() => {
+            reject(new Error(`FFmpeg timeout after 5 minutes for segment ${i}`));
+          }, 5 * 60 * 1000);
+
           ffmpeg(inputFilePath!)
             .setStartTime(segment.start)
             .setDuration(segment.end - segment.start)
             .outputOptions([
-                "-c:v libx264",      // Codec de video H.264
-                "-preset fast",      // Velocidad de encoding
-                "-crf 23",           // Calidad (18-28, menor = mejor calidad)
-                "-c:a aac",          // Codec de audio
-                "-b:a 128k",         // Bitrate de audio
+                // ✅ OPTIMIZACIÓN: Usar -c copy para cortar sin re-encodear (10x más rápido)
+                "-c:v copy",         // Copiar codec de video sin re-encodear
+                "-c:a copy",         // Copiar codec de audio sin re-encodear
+                "-avoid_negative_ts make_zero", // Evitar timestamps negativos
                 "-movflags +faststart", // Optimizar para streaming
             ])
             .output(outputSegmentPath)
             .on('end', () => {
+              clearTimeout(timeout);
               console.log(`Job ${job.id}: Segment ${i} created`);
               resolve(null);
             })
             .on('error', (err) => {
+              clearTimeout(timeout);
               console.error(`Job ${job.id}: Error creating segment ${i}`, err);
               reject(err);
             })
@@ -151,16 +173,23 @@ class RenderService {
       tempFiles.push(finalOutputPath);
 
       await new Promise((resolve, reject) => {
+        // ✅ ARREGLO: Agregar timeout de 5 minutos para concatenación
+        const timeout = setTimeout(() => {
+          reject(new Error('FFmpeg concatenation timeout after 5 minutes'));
+        }, 5 * 60 * 1000);
+
         ffmpeg()
           .input(concatFilePath)
           .inputOptions(['-f concat', '-safe 0'])
           .outputOptions(['-c copy']) // Copiar codecs sin re-encodear
           .output(finalOutputPath)
           .on('end', () => {
+            clearTimeout(timeout);
             console.log(`Job ${job.id}: Segments merged successfully`);
             resolve(null);
           })
           .on('error', (err) => {
+            clearTimeout(timeout);
             console.error(`Job ${job.id}: Error merging segments`, err);
             reject(err);
           })
