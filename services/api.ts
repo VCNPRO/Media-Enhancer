@@ -1,27 +1,37 @@
-﻿const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
-console.log(' Usando BACKEND_URL:', BACKEND_URL);
+console.log('🌐 Usando BACKEND_URL:', BACKEND_URL);
 
 export const uploadVideo = async (file: File): Promise<string> => {
-  console.log(' Subiendo archivo a Cloud Storage a través del backend...');
+  console.log('📤 Solicitando URL firmada para:', file.name);
 
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const res = await fetch(`${BACKEND_URL}/api/media/upload`, {
-    method: 'POST',
-    body: formData,
-  });
+  const res = await fetch(
+    BACKEND_URL + '/signed-url?fileName=' + encodeURIComponent(file.name) + '&contentType=' + encodeURIComponent(file.type)
+  );
 
   if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error?.message || 'Error al subir el video');
+    throw new Error('Error obteniendo URL firmada');
   }
 
-  const { data } = await res.json();
-  console.log(' Archivo subido exitosamente:', data.url);
+  const { uploadUrl, publicUrl } = await res.json();
 
-  return data.url;
+  console.log('☁️ Subiendo archivo directamente a Cloud Storage...');
+
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': file.type
+    },
+    body: file
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error('Error subiendo archivo a Cloud Storage');
+  }
+
+  console.log('✅ Archivo subido exitosamente:', publicUrl);
+
+  return publicUrl;
 };
 
 export const startRenderJob = async (videoUrl: string, segments: { start: number; end: number }[]): Promise<{ jobId: string }> => {
