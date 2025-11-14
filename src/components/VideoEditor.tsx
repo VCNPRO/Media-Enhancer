@@ -26,6 +26,9 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({ url, type, fileName, f
   const [segments, setSegments] = useState<VideoSegment[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [renderedUrl, setRenderedUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>('');
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;

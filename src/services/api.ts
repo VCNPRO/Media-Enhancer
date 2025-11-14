@@ -38,16 +38,18 @@ export const uploadVideo = async (file: File): Promise<string> => {
 
 export const startRenderJob = async (
   videoUrl: string,
-  segments: { start: number; end: number }[]
+  segments: { start: number; end: number }[],
+  title?: string,
+  audioUrl?: string
 ): Promise<{ jobId: string }> => {
-  console.log('🎬 Iniciando trabajo de renderizado:', { videoUrl, segments });
+  console.log('🎬 Iniciando trabajo de renderizado:', { videoUrl, segments, title, audioUrl });
 
   const res = await fetch(`${BACKEND_URL}/api/media/render`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ videoUrl, segments }),
+    body: JSON.stringify({ videoUrl, segments, title, audioUrl }),
   });
 
   if (!res.ok) {

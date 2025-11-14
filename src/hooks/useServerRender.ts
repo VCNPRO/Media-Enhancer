@@ -7,7 +7,7 @@ interface ServerRenderResult {
   progress: number;
   finalUrl: string | null;
   error: string | null;
-  startRendering: (videoUrl: string, segments: { start: number; end: number }[]) => Promise<void>;
+  startRendering: (videoUrl: string, segments: { start: number; end: number }[], title?: string, audioUrl?: string) => Promise<void>;
 }
 
 export const useServerRender = (): ServerRenderResult => {
@@ -28,7 +28,7 @@ export const useServerRender = (): ServerRenderResult => {
     };
   }, []);
 
-  const startRendering = useCallback(async (videoUrl: string, segments: { start: number; end: number }[]) => {
+  const startRendering = useCallback(async (videoUrl: string, segments: { start: number; end: number }[], title?: string, audioUrl?: string) => {
     try {
       // Limpiar interval previo si existe
       if (intervalRef.current) {
@@ -38,7 +38,7 @@ export const useServerRender = (): ServerRenderResult => {
 
       setStatus('queued');
       setError(null);
-      const { jobId: newJobId } = await startRenderJob(videoUrl, segments);
+      const { jobId: newJobId } = await startRenderJob(videoUrl, segments, title, audioUrl);
       setJobId(newJobId);
 
       intervalRef.current = setInterval(async () => {

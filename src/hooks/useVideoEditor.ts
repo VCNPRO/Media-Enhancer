@@ -15,7 +15,9 @@ interface UseVideoEditorReturn {
   renderSegments: (
     videoUrl: string, // Ahora siempre esperamos una URL
     segments: VideoSegment[],
-    fileName: string
+    fileName: string,
+    title?: string,
+    audioUrl?: string
   ) => Promise<string | null>;
 }
 
@@ -35,7 +37,9 @@ export const useVideoEditor = (): UseVideoEditorReturn => {
   const renderSegments = async (
     videoUrl: string,
     segments: VideoSegment[],
-    fileName: string
+    fileName: string,
+    title?: string,
+    audioUrl?: string
   ): Promise<string | null> => {
     if (segments.length === 0) {
       setError('No hay segmentos para renderizar');
@@ -44,7 +48,7 @@ export const useVideoEditor = (): UseVideoEditorReturn => {
 
     try {
       setError(null);
-      await startRendering(videoUrl, segments);
+      await startRendering(videoUrl, segments, title, audioUrl);
       return serverRenderFinalUrl; // Esto se actualizará asincrónicamente
     } catch (err: any) {
       console.error('❌ Error al iniciar el renderizado en el servidor:', err);
