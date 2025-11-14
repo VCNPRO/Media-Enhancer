@@ -5,10 +5,17 @@ const { Storage } = require('@google-cloud/storage');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.use(cors({
+// Configuración CORS más permisiva
+const corsOptions = {
   origin: ['http://localhost:5173', 'http://localhost:5174', 'https://media-enhancer.vercel.app'],
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Habilitar pre-flight para todas las rutas
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -19,8 +26,6 @@ const bucket = storage.bucket(bucketName);
 
 console.log('Server starting on port', PORT);
 console.log('Bucket:', bucketName);
-
-app.options('*', cors());
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Media Enhancer Backend' });
