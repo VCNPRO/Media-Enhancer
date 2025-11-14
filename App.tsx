@@ -31,16 +31,36 @@ const App: React.FC = () => {
         if (file) {
             const mediaType = getMediaType(file);
             // Ahora todo el procesamiento de video se hará en la nube
-            const shouldUseCloud = mediaType === 'video'; 
-            
+            const shouldUseCloud = mediaType === 'video';
+
             console.log(`📦 Archivo: ${file.name}`);
             console.log(`📏 Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
             console.log(`☁️ Usar Cloud: ${shouldUseCloud ? 'Sí' : 'No (local)'}`);
-            
+
+            let fileUrl = URL.createObjectURL(file); // URL local por defecto
+
+            // ✅ ARREGLO: Si es video, subir al servidor
+            if (shouldUseCloud) {
+                try {
+                    console.log('☁️ Subiendo archivo al servidor...');
+                    const cloudUrl = await uploadAndProcess(file);
+
+                    if (cloudUrl) {
+                        fileUrl = cloudUrl; // Usar URL del servidor
+                        console.log('✅ Archivo subido al servidor:', cloudUrl);
+                    } else {
+                        console.warn('⚠️ Upload falló, usando URL local');
+                    }
+                } catch (error) {
+                    console.error('❌ Error subiendo archivo:', error);
+                    console.warn('⚠️ Usando URL local como fallback');
+                }
+            }
+
             setMediaFile({
                 file,
                 name: file.name,
-                url: URL.createObjectURL(file),
+                url: fileUrl,
                 type: mediaType,
                 useCloud: shouldUseCloud,
             });
