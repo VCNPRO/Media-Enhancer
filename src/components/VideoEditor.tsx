@@ -115,6 +115,24 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({ url, type, fileName, f
     }
   };
 
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAudioFile(file);
+      // Subir audio a Cloud Storage
+      try {
+        const { uploadVideo } = await import('../services/api');
+        console.log('📤 Subiendo archivo de audio...');
+        const uploadedAudioUrl = await uploadVideo(file);
+        setAudioUrl(uploadedAudioUrl);
+        console.log('✅ Audio subido:', uploadedAudioUrl);
+      } catch (err: any) {
+        console.error('❌ Error subiendo audio:', err);
+        alert(`Error subiendo audio: ${err.message}`);
+      }
+    }
+  };
+
   const renderVideo = async () => {
     if (segments.length === 0) {
       alert('Agrega al menos un segmento para renderizar');
@@ -122,12 +140,14 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({ url, type, fileName, f
     }
 
     console.log('🎬 Renderizando segmentos:', segments);
+    console.log('📝 Título:', title);
+    console.log('🎵 Audio URL:', audioUrl);
 
     // Determinar la fuente del video (File o URL)
     const videoSource = file || url;
 
     try {
-      const resultUrl = await renderSegments(videoSource, segments, fileName);
+      const resultUrl = await renderSegments(videoSource, segments, fileName, title || undefined, audioUrl || undefined);
 
       if (resultUrl) {
         console.log('✅ Video renderizado exitosamente:', resultUrl);
@@ -336,6 +356,71 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({ url, type, fileName, f
           </div>
         </div>
       )}
+
+      {/* Additional Options */}
+      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <h4 className="font-semibold mb-3 flex items-center gap-2">
+          <span>⚙️</span>
+          Opciones Adicionales
+        </h4>
+
+        <div className="space-y-4">
+          {/* Title Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              📝 Título del Video (opcional)
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: Mi Video Editado"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              El título aparecerá superpuesto en la parte superior del video
+            </p>
+          </div>
+
+          {/* Audio Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              🎵 Reemplazar Audio (opcional)
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer">
+                <div className="px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-center transition">
+                  {audioFile ? (
+                    <span className="text-green-400">✓ {audioFile.name}</span>
+                  ) : (
+                    <span className="text-gray-300">Seleccionar archivo de audio</span>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioUpload}
+                  className="hidden"
+                />
+              </label>
+              {audioFile && (
+                <button
+                  onClick={() => {
+                    setAudioFile(null);
+                    setAudioUrl(null);
+                  }}
+                  className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              El audio del video original será reemplazado por este archivo
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Render Section */}
       <div className="bg-gradient-to-r from-red-900/50 to-pink-900/50 border-2 border-red-500/50 rounded-lg p-6">
