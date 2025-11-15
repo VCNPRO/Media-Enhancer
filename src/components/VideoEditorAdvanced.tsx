@@ -82,28 +82,39 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
     if (file) {
       const mediaType = getMediaType(file);
       const shouldUseCloud = mediaType === 'video'; // Always use cloud for video
-      const localUrl = URL.createObjectURL(file);
 
-      setMediaFile({
-        file,
-        name: file.name,
-        url: localUrl,
-        type: mediaType,
-        useCloud: shouldUseCloud,
-      });
-
-      // This part of the logic is currently a dead-end, as the editor hook doesn't support cloud URLs.
-      // The check above prevents this from being used for now.
       if (shouldUseCloud) {
+        // Para videos, subir PRIMERO a R2 antes de mostrar el editor
+        console.log('📤 Subiendo video a R2 Storage...');
         try {
           const cloudUrl = await uploadAndProcess(file);
           if (cloudUrl) {
-            setMediaFile(prev => prev ? { ...prev, url: cloudUrl } : null);
-            URL.revokeObjectURL(localUrl);
+            console.log('✅ Video subido a R2:', cloudUrl);
+            setMediaFile({
+              file,
+              name: file.name,
+              url: cloudUrl,  // Usar URL de R2 directamente
+              type: mediaType,
+              useCloud: true,
+            });
+          } else {
+            throw new Error('No se obtuvo URL de R2');
           }
         } catch (error) {
           console.error('❌ Error al subir archivo:', error);
+          alert('Error al subir el video a R2 Storage. Por favor, intenta de nuevo.');
+          setMediaFile(null);
         }
+      } else {
+        // Para audio/imagen, usar blob URL local
+        const localUrl = URL.createObjectURL(file);
+        setMediaFile({
+          file,
+          name: file.name,
+          url: localUrl,
+          type: mediaType,
+          useCloud: false,
+        });
       }
     } else {
       setMediaFile(null);
