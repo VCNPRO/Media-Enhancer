@@ -3,3 +3,4 @@ uploads/
 *.log
 .env
 .DS_Store
+setup-cors.js
