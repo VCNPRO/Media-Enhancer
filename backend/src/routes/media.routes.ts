@@ -399,7 +399,7 @@ router.post(
   // ✅ ARREGLO: Agregar rate limiting para prevenir abuso
   aiProcessingRateLimiter,
   validate([
-    body('videoUrl').isURL().withMessage('Valid videoUrl is required'),
+    body('videoUrl').isURL({ require_tld: false, allow_underscores: true }).withMessage('Valid videoUrl is required'),
     body('segments').isArray().withMessage('Segments must be an array'),
     body('segments.*.start').isNumeric().withMessage('Segment start must be a number'),
     body('segments.*.end').isNumeric().withMessage('Segment end must be a number'),
