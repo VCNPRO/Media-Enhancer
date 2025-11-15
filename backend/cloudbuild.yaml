@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$BUILD_ID'
       - '-t'
       - 'gcr.io/$PROJECT_ID/media-enhancer-backend:latest'
       - '-f'
@@ -16,7 +16,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$COMMIT_SHA'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/media-enhancer-backend'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -26,7 +27,7 @@ steps:
       - 'deploy'
       - 'media-enhancer-backend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/media-enhancer-backend:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -36,7 +37,7 @@ steps:
       - 'PORT=8080,NODE_ENV=production,DISABLE_AUTH=true,R2_ACCOUNT_ID=65353fa961d2c394ab3d630c0f548d63,R2_BUCKET_NAME=media-enhancer-videos,R2_PUBLIC_URL=https://pub-243e56a89434402abe5289e619bc7e67.r2.dev,R2_ACCESS_KEY_ID=f398706ecb361929c306fd167b2b793b,R2_SECRET_ACCESS_KEY=ea9dcfa74cfcf2bc943604e75b0a52ea565a28228b9ff16a2971bae91f253e3c'
 
 images:
-  - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/media-enhancer-backend:$BUILD_ID'
   - 'gcr.io/$PROJECT_ID/media-enhancer-backend:latest'
 
 options:
