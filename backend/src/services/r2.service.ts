@@ -100,9 +100,33 @@ class R2Service {
   }
 
   /**
-   * Obtener URL firmada para acceso temporal
+   * Obtener URL firmada para subir archivos (PUT)
    */
   async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    if (!this.client) {
+      throw new Error('R2 client not configured');
+    }
+
+    try {
+      // Usar PutObjectCommand para generar URL de subida
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      const url = await getSignedUrl(this.client, command, { expiresIn });
+
+      return url;
+    } catch (error) {
+      console.error('❌ Error getting signed URL:', error);
+      throw new Error('Failed to get file URL');
+    }
+  }
+
+  /**
+   * Obtener URL firmada para descargar archivos (GET)
+   */
+  async getSignedDownloadUrl(key: string, expiresIn: number = 3600): Promise<string> {
     if (!this.client) {
       throw new Error('R2 client not configured');
     }
@@ -117,7 +141,7 @@ class R2Service {
 
       return url;
     } catch (error) {
-      console.error('❌ Error getting signed URL:', error);
+      console.error('❌ Error getting signed download URL:', error);
       throw new Error('Failed to get file URL');
     }
   }
