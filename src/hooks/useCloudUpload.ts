@@ -28,15 +28,15 @@ export const useCloudUpload = (): UseCloudUploadResult => {
       setUploading(true);
       setProgress(10);
 
-      console.log(' Subiendo archivo a Cloud Storage...');
-      
+      console.log('📤 Subiendo archivo a R2 Storage...');
+
       const publicUrl = await uploadVideo(file);
-      
+
       setProgress(100);
       setUploading(false);
       setProcessing(false);
 
-      console.log(' Archivo subido exitosamente:', publicUrl);
+      console.log('✅ Archivo subido exitosamente a R2:', publicUrl);
 
       return publicUrl;
     } catch (err: any) {
