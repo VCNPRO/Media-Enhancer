@@ -191,6 +191,10 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
 
   const removeAudioTrack = (id: string) => setAudioTracks(audioTracks.filter((track) => track.id !== id));
 
+  const updateAudioVolume = (id: string, volume: number) => {
+    setAudioTracks(audioTracks.map(track => track.id === id ? { ...track, volume } : track));
+  };
+
   const openTitleEditor = () => {
     setCurrentTitle({ id: Date.now().toString(), text: '', start: currentTime, duration: 3, fontSize: 48, color: '#FFFFFF', position: 'bottom', backgroundColor: 'rgba(0,0,0,0.7)' });
     setShowTitleEditor(true);
@@ -354,7 +358,36 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
                   {audioTracks.length > 0 && (
                      <div>
                        <h4 className="text-xs font-semibold mb-2">Audios ({audioTracks.length})</h4>
-                       {/* ... audio track list ... */}
+                       <div className="space-y-2">
+                         {audioTracks.map((track, index) => (
+                           <div key={track.id} className="p-2 bg-gray-700 rounded text-xs space-y-2">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-2">
+                                 <span className="font-bold text-yellow-400">#{index + 1}</span>
+                                 <div className="truncate max-w-[120px]" title={track.name}>{track.name}</div>
+                               </div>
+                               <button onClick={() => removeAudioTrack(track.id)} className="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded">🗑️</button>
+                             </div>
+                             <div className="space-y-1">
+                               <div className="flex items-center justify-between text-[10px] text-gray-400">
+                                 <span>Volumen</span>
+                                 <span className="font-mono">{Math.round(track.volume * 100)}%</span>
+                               </div>
+                               <input
+                                 type="range"
+                                 min="0"
+                                 max="100"
+                                 value={track.volume * 100}
+                                 onChange={(e) => updateAudioVolume(track.id, parseInt(e.target.value) / 100)}
+                                 className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                               />
+                             </div>
+                             <div className="text-gray-400 text-[10px]">
+                               {formatTime(track.start)} → {formatTime(track.start + track.duration)}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
                      </div>
                   )}
                 </div>
@@ -368,7 +401,22 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
                   {titles.length > 0 && (
                     <div>
                       <h4 className="text-xs font-semibold mb-2">Títulos ({titles.length})</h4>
-                      {/* ... title list ... */}
+                      <div className="space-y-1.5">
+                        {titles.map((title, index) => (
+                          <div key={title.id} className="p-2 bg-gray-700 rounded text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-purple-400">#{index + 1}</span>
+                                <div className="truncate max-w-[150px]" title={title.text}>"{title.text}"</div>
+                              </div>
+                              <button onClick={() => removeTitle(title.id)} className="px-2 py-0.5 bg-red-600 hover:bg-red-700 rounded">🗑️</button>
+                            </div>
+                            <div className="text-gray-400 text-[10px]">
+                              {formatTime(title.start)} → {formatTime(title.start + title.duration)} | {title.position} | {title.fontSize}px
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -406,6 +454,102 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal de Editor de Títulos */}
+      {showTitleEditor && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-md">
+            <div className="border-b border-gray-700 p-4">
+              <h3 className="text-lg font-bold">Crear Título</h3>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1">Texto</label>
+                <input
+                  type="text"
+                  value={currentTitle.text}
+                  onChange={(e) => setCurrentTitle({ ...currentTitle, text: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-red-500 focus:outline-none text-sm"
+                  placeholder="Ingresa el texto del título"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Inicio (s)</label>
+                  <input
+                    type="number"
+                    value={currentTitle.start}
+                    onChange={(e) => setCurrentTitle({ ...currentTitle, start: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-red-500 focus:outline-none text-sm"
+                    step="0.1"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Duración (s)</label>
+                  <input
+                    type="number"
+                    value={currentTitle.duration}
+                    onChange={(e) => setCurrentTitle({ ...currentTitle, duration: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-red-500 focus:outline-none text-sm"
+                    step="0.1"
+                    min="0.1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Color</label>
+                  <input
+                    type="color"
+                    value={currentTitle.color}
+                    onChange={(e) => setCurrentTitle({ ...currentTitle, color: e.target.value })}
+                    className="w-full h-10 bg-gray-700 rounded border border-gray-600 cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Tamaño</label>
+                  <input
+                    type="number"
+                    value={currentTitle.fontSize}
+                    onChange={(e) => setCurrentTitle({ ...currentTitle, fontSize: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-red-500 focus:outline-none text-sm"
+                    min="12"
+                    max="120"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">Posición</label>
+                <select
+                  value={currentTitle.position}
+                  onChange={(e) => setCurrentTitle({ ...currentTitle, position: e.target.value as 'top' | 'center' | 'bottom' })}
+                  className="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-red-500 focus:outline-none text-sm"
+                >
+                  <option value="top">Arriba</option>
+                  <option value="center">Centro</option>
+                  <option value="bottom">Abajo</option>
+                </select>
+              </div>
+            </div>
+            <div className="border-t border-gray-700 p-4 flex gap-2">
+              <button
+                onClick={() => setShowTitleEditor(false)}
+                className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-sm transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={addTitle}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition"
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
