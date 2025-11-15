@@ -247,6 +247,20 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
             {!mediaFile ? (
               <div className="w-full p-4">
                 <FileUpload onFileChange={handleFileChange} />
+                {uploading && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-400">📤 Subiendo a R2 Storage...</span>
+                      <span className="font-mono text-white">{Math.round(progress)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-blue-500 h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <video
@@ -367,7 +381,22 @@ export const VideoEditorAdvanced: React.FC<VideoEditorAdvancedProps> = ({
                 <h4 className="text-xs font-bold mb-1">Renderizar</h4>
                             <button onClick={renderVideo} disabled={rendering || !mediaFile} className="w-full px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-xs transition flex items-center justify-center gap-1.5">
                               {rendering ? '⚙️ Renderizando...' : '🎬 Renderizar'}
-                            </button>              </div>
+                            </button>
+                {rendering && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-yellow-400">⚙️ Procesando video...</span>
+                      <span className="font-mono text-white">{Math.round(renderProgress)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-yellow-500 h-full transition-all duration-300 rounded-full"
+                        style={{ width: `${renderProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
               {renderedUrl && !rendering && (
                 <div className="p-2 bg-green-900/20 border border-green-500 rounded">
                   <a href={renderedUrl} download={mediaFile ? `edited_${mediaFile.name}`: 'edited_video.mp4'} className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs transition flex items-center justify-center gap-1.5"><span>⬇️</span> Descargar</a>
