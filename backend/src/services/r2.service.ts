@@ -130,6 +130,13 @@ class R2Service {
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     return `users/${userId}/${timestamp}-${sanitizedFilename}`;
   }
+
+  /**
+   * Obtener URL pública de un archivo
+   */
+  getPublicUrl(key: string): string {
+    return `${this.publicUrl}/${key}`;
+  }
 }
 
 export default new R2Service();

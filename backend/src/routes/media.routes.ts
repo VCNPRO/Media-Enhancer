@@ -50,12 +50,14 @@ router.post(
 
       const uniqueFileName = r2Service.generateKey(userId || 'anonymous', fileName);
       const uploadUrl = await r2Service.getSignedUrl(uniqueFileName, 15 * 60); // 15 minutos de expiración para subida
+      const publicUrl = r2Service.getPublicUrl(uniqueFileName); // URL pública para acceder al archivo
 
       res.json({
         success: true,
         data: {
           uploadUrl: uploadUrl,
           fileName: uniqueFileName, // Clave que se usará para subir el archivo
+          publicUrl: publicUrl, // URL pública del archivo después de subir
         },
       });
     } catch (error) {
