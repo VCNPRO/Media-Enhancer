@@ -1,6 +1,7 @@
 ﻿const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
-console.log('🌐 Usando BACKEND_URL:', BACKEND_URL);
+console.log('🌐 Backend conectado a:', BACKEND_URL);
+console.log('📦 Versión: R2 Storage Enabled');
 
 export const uploadVideo = async (file: File): Promise<string> => {
   console.log('📤 Solicitando URL firmada para:', file.name);
